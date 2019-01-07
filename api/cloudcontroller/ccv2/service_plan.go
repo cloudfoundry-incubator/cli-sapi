@@ -77,6 +77,7 @@ func (client *Client) GetServicePlan(servicePlanGUID string) (ServicePlan, Warni
 	return servicePlan, response.Warnings, err
 }
 
+// GetServicePlans returns all service plans which satisfy the provided filters.
 func (client *Client) GetServicePlans(filters ...Filter) ([]ServicePlan, Warnings, error) {
 	request, err := client.newHTTPRequest(requestOptions{
 		RequestName: internal.GetServicePlansRequest,
@@ -107,6 +108,7 @@ type updateServicePlanRequestBody struct {
 	Public bool `json:"public"`
 }
 
+// UpdateServicePlan makes a specified service plan public or private.
 func (client *Client) UpdateServicePlan(guid string, public bool) (Warnings, error) {
 	requestBody := updateServicePlanRequestBody{
 		Public: public,

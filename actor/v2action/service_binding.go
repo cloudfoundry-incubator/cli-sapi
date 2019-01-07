@@ -10,6 +10,7 @@ import (
 // application.
 type ServiceBinding ccv2.ServiceBinding
 
+// IsInProgress returns true if a service bind operation is in progress, else returns false.
 func (serviceBinding ServiceBinding) IsInProgress() bool {
 	return serviceBinding.LastOperation.State == constant.LastOperationInProgress
 }
@@ -101,6 +102,7 @@ func (actor Actor) UnbindServiceBySpace(appName string, serviceInstanceName stri
 	return ServiceBinding(deletedBinding), allWarnings, err
 }
 
+// GetServiceBindingsByServiceInstance gets all service bindings for a service instance with the specified GUID.
 func (actor Actor) GetServiceBindingsByServiceInstance(serviceInstanceGUID string) ([]ServiceBinding, Warnings, error) {
 	serviceBindings, warnings, err := actor.CloudControllerClient.GetServiceInstanceServiceBindings(serviceInstanceGUID)
 	if err != nil {
@@ -115,6 +117,7 @@ func (actor Actor) GetServiceBindingsByServiceInstance(serviceInstanceGUID strin
 	return allServiceBindings, Warnings(warnings), nil
 }
 
+// GetServiceBindingsByUserProvidedServiceInstance gets service bindings for a user-provided service instance with the specified GUID.
 func (actor Actor) GetServiceBindingsByUserProvidedServiceInstance(userProvidedServiceInstanceGUID string) ([]ServiceBinding, Warnings, error) {
 	serviceBindings, warnings, err := actor.CloudControllerClient.GetUserProvidedServiceInstanceServiceBindings(userProvidedServiceInstanceGUID)
 	if err != nil {

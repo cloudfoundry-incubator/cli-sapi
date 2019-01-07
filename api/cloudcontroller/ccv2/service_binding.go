@@ -58,6 +58,7 @@ type serviceBindingRequestBody struct {
 	Parameters          map[string]interface{} `json:"parameters"`
 }
 
+// CreateServiceBinding creates a new binding between the specified app and service instance.
 func (client *Client) CreateServiceBinding(appGUID string, serviceInstanceGUID string, bindingName string, acceptsIncomplete bool, parameters map[string]interface{}) (ServiceBinding, Warnings, error) {
 	requestBody := serviceBindingRequestBody{
 		ServiceInstanceGUID: serviceInstanceGUID,

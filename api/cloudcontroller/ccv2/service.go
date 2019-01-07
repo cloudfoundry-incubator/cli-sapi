@@ -88,7 +88,7 @@ func (client *Client) GetService(serviceGUID string) (Service, Warnings, error) 
 	return service, response.Warnings, err
 }
 
-// GetServices returns a list of Services given the provided filters.
+// GetServices returns a list of services given the provided filters.
 func (client *Client) GetServices(filters ...Filter) ([]Service, Warnings, error) {
 	opts := requestOptions{
 		RequestName: internal.GetServicesRequest,
@@ -98,6 +98,7 @@ func (client *Client) GetServices(filters ...Filter) ([]Service, Warnings, error
 	return client.makeServicesRequest(opts)
 }
 
+// GetSpaceServices returns a list of services visible in the specified space.
 func (client *Client) GetSpaceServices(spaceGUID string, filters ...Filter) ([]Service, Warnings, error) {
 	opts := requestOptions{
 		RequestName: internal.GetSpaceServicesRequest,

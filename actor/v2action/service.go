@@ -6,8 +6,10 @@ import (
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv2/constant"
 )
 
+// Service represents a CLI Service.
 type Service ccv2.Service
 
+// GetService returns a service with the provided GUID.
 func (actor Actor) GetService(serviceGUID string) (Service, Warnings, error) {
 	service, warnings, err := actor.CloudControllerClient.GetService(serviceGUID)
 	return Service(service), Warnings(warnings), err
@@ -50,8 +52,10 @@ func (actor Actor) getServiceByNameForSpace(serviceName, spaceGUID string) (Serv
 	return Service(services[0]), Warnings(warnings), nil
 }
 
+// ServicesWithPlans is a map of services and a slice of corresponding service plans.
 type ServicesWithPlans map[Service][]ServicePlan
 
+// GetServicesWithPlansForBroker returns all services and their corresponding services exposed by the specified broker.
 func (actor Actor) GetServicesWithPlansForBroker(brokerGUID string) (ServicesWithPlans, Warnings, error) {
 	var allWarnings Warnings
 	services, warnings, err := actor.CloudControllerClient.GetServices(ccv2.Filter{

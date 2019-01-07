@@ -20,6 +20,7 @@ type ServiceKey struct {
 	Credentials map[string]interface{}
 }
 
+// UnmarshalJSON helps unmarshal a Cloud Controller Service Key response.
 func (serviceKey *ServiceKey) UnmarshalJSON(data []byte) error {
 	var ccServiceKey struct {
 		Metadata internal.Metadata

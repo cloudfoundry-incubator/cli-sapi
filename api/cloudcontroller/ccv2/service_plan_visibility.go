@@ -45,6 +45,7 @@ type createServicePlanRequestBody struct {
 	OrganizationGUID string `json:"organization_guid"`
 }
 
+// CreateServicePlanVisibility creates a Service Plan Visibility for the given plan and organization.
 func (client *Client) CreateServicePlanVisibility(planGUID string, orgGUID string) (ServicePlanVisibility, Warnings, error) {
 	requestBody := createServicePlanRequestBody{
 		ServicePlanGUID:  planGUID,
@@ -73,6 +74,7 @@ func (client *Client) CreateServicePlanVisibility(planGUID string, orgGUID strin
 	return servicePlanVisibility, response.Warnings, err
 }
 
+// DeleteServicePlanVisibility deletes a Service Plan Visibility from Cloud Controller.
 func (client *Client) DeleteServicePlanVisibility(servicePlanVisibilityGUID string) (Warnings, error) {
 	request, err := client.newHTTPRequest(requestOptions{
 		RequestName: internal.DeleteServicePlanVisibilityRequest,

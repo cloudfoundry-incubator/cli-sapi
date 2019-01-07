@@ -11,16 +11,22 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// ServiceInstanceShareType represents whether a service instance is shared, and if so, whether it's shared to or from another space.
 type ServiceInstanceShareType string
 
+// LastOperation represents a CLI Last Operation.
 type LastOperation ccv2.LastOperation
 
 const (
+	// ServiceInstanceIsSharedFrom denotes a service instance which is being shared from another space.
 	ServiceInstanceIsSharedFrom ServiceInstanceShareType = "SharedFrom"
-	ServiceInstanceIsSharedTo   ServiceInstanceShareType = "SharedTo"
-	ServiceInstanceIsNotShared  ServiceInstanceShareType = "NotShared"
+	// ServiceInstanceIsSharedTo denotes a service instance which is being shared into another space.
+	ServiceInstanceIsSharedTo ServiceInstanceShareType = "SharedTo"
+	// ServiceInstanceIsNotShared denotes a service instance which is not being shared.
+	ServiceInstanceIsNotShared ServiceInstanceShareType = "NotShared"
 )
 
+// ServiceInstanceSummary represents a summary of a service instance.
 type ServiceInstanceSummary struct {
 	ServiceInstance
 
@@ -33,28 +39,34 @@ type ServiceInstanceSummary struct {
 	BoundApplications                 []BoundApplication
 }
 
+// IsShareable returns true if the service instance can be shared.
 func (s ServiceInstanceSummary) IsShareable() bool {
 	return s.ServiceInstanceSharingFeatureFlag && s.Service.Extra.Shareable
 }
 
+// IsNotShared returns true if the service instance is not currently being shared.
 func (s ServiceInstanceSummary) IsNotShared() bool {
 	return s.ServiceInstanceShareType == ServiceInstanceIsNotShared
 }
 
+// IsSharedFrom returns true if the service instance is being shared from another space.
 func (s ServiceInstanceSummary) IsSharedFrom() bool {
 	return s.ServiceInstanceShareType == ServiceInstanceIsSharedFrom
 }
 
+// IsSharedTo returns true if the service instance is being shared with another space.
 func (s ServiceInstanceSummary) IsSharedTo() bool {
 	return s.ServiceInstanceShareType == ServiceInstanceIsSharedTo
 }
 
+// BoundApplication represents an app which the service instance is bound to.
 type BoundApplication struct {
 	AppName            string
 	LastOperation      LastOperation
 	ServiceBindingName string
 }
 
+// GetServiceInstanceSummaryByNameAndSpace returns a summary of the service instance with the given name and spaceGUID.
 func (actor Actor) GetServiceInstanceSummaryByNameAndSpace(name string, spaceGUID string) (ServiceInstanceSummary, Warnings, error) {
 	serviceInstance, instanceWarnings, err := actor.GetServiceInstanceByNameAndSpace(name, spaceGUID)
 	allWarnings := Warnings(instanceWarnings)
@@ -66,6 +78,7 @@ func (actor Actor) GetServiceInstanceSummaryByNameAndSpace(name string, spaceGUI
 	return serviceInstanceSummary, append(allWarnings, warnings...), err
 }
 
+// GetServiceInstancesSummaryBySpace returns a list of service instance summaries for all the services in the space with the specified spaceGUID.
 func (actor Actor) GetServiceInstancesSummaryBySpace(spaceGUID string) ([]ServiceInstanceSummary, Warnings, error) {
 	serviceInstances, warnings, err := actor.CloudControllerClient.GetSpaceServiceInstances(
 		spaceGUID,

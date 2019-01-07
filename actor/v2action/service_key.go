@@ -7,6 +7,7 @@ import (
 // ServiceKey represents a set of credentials for a service instance.
 type ServiceKey ccv2.ServiceKey
 
+// CreateServiceKey creates a service key for a given service instance and space.
 func (actor Actor) CreateServiceKey(serviceInstanceName, keyName, spaceGUID string, parameters map[string]interface{}) (ServiceKey, Warnings, error) {
 	var allWarnings Warnings
 

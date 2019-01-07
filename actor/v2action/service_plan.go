@@ -6,8 +6,10 @@ import (
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv2/constant"
 )
 
+// ServicePlan represents a CLI Service Plan.
 type ServicePlan ccv2.ServicePlan
 
+// GetServicePlan returns a service plan with the specified GUID.
 func (actor Actor) GetServicePlan(servicePlanGUID string) (ServicePlan, Warnings, error) {
 	servicePlan, warnings, err := actor.CloudControllerClient.GetServicePlan(servicePlanGUID)
 	return ServicePlan(servicePlan), Warnings(warnings), err

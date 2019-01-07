@@ -26,6 +26,7 @@ func (actor Actor) CreateServiceInstance(spaceGUID, serviceName, servicePlanName
 	return ServiceInstance(instance), allWarnings, err
 }
 
+// GetServiceInstance returns a service instance with the specified GUID.
 func (actor Actor) GetServiceInstance(guid string) (ServiceInstance, Warnings, error) {
 	instance, warnings, err := actor.CloudControllerClient.GetServiceInstance(guid)
 	if _, ok := err.(ccerror.ResourceNotFoundError); ok {
@@ -35,6 +36,8 @@ func (actor Actor) GetServiceInstance(guid string) (ServiceInstance, Warnings, e
 	return ServiceInstance(instance), Warnings(warnings), err
 }
 
+// GetServiceInstanceByNameAndSpace gets a service instance matching the specified name and spaceGUID.
+// Warning: if multiple matching service instances are found, only the first one will be returned.
 func (actor Actor) GetServiceInstanceByNameAndSpace(name string, spaceGUID string) (ServiceInstance, Warnings, error) {
 	serviceInstances, warnings, err := actor.CloudControllerClient.GetSpaceServiceInstances(
 		spaceGUID,
@@ -58,6 +61,7 @@ func (actor Actor) GetServiceInstanceByNameAndSpace(name string, spaceGUID strin
 	return ServiceInstance(serviceInstances[0]), Warnings(warnings), nil
 }
 
+// GetServiceInstancesByApplication returns all service instances which are bound to an app with the specified GUID.
 func (actor Actor) GetServiceInstancesByApplication(appGUID string) ([]ServiceInstance, Warnings, error) {
 	var allWarnings Warnings
 	bindings, apiWarnings, err := actor.CloudControllerClient.GetServiceBindings(ccv2.Filter{
@@ -84,6 +88,7 @@ func (actor Actor) GetServiceInstancesByApplication(appGUID string) ([]ServiceIn
 	return serviceInstances, allWarnings, err
 }
 
+// GetServiceInstancesBySpace returns all service instances which belong to a space with the specified GUID.
 func (actor Actor) GetServiceInstancesBySpace(spaceGUID string) ([]ServiceInstance, Warnings, error) {
 	ccv2ServiceInstances, warnings, err := actor.CloudControllerClient.GetSpaceServiceInstances(spaceGUID, true)
 
