@@ -88,6 +88,7 @@ const (
 	PostServiceInstancesRequest                          = "PostServiceInstance"
 	PostSharedDomainRequest                              = "PostSharedDomain"
 	PostServiceBrokerRequest                             = "PostServiceBroker"
+	PostMigrateServiceBrokerRequest                      = "PostMigrateServiceBrokerRequest"
 	PostServiceKeyRequest                                = "PostServiceKey"
 	PostServicePlanVisibilityRequest                     = "PostServicePlanVisibility"
 	PostSpaceRequest                                     = "PostSpace"
@@ -173,6 +174,7 @@ var APIRoutes = rata.Routes{
 	{Path: "/v2/service_bindings/:service_binding_guid", Method: http.MethodGet, Name: GetServiceBindingRequest},
 	{Path: "/v2/service_brokers", Method: http.MethodGet, Name: GetServiceBrokersRequest},
 	{Path: "/v2/service_brokers", Method: http.MethodPost, Name: PostServiceBrokerRequest},
+	{Path: "/v3/migrate_service_brokers", Method: http.MethodPost, Name: PostMigrateServiceBrokerRequest},
 	{Path: "/v2/service_instances", Method: http.MethodGet, Name: GetServiceInstancesRequest},
 	{Path: "/v2/service_instances", Method: http.MethodPost, Name: PostServiceInstancesRequest},
 	{Path: "/v2/service_instances/:service_instance_guid", Method: http.MethodGet, Name: GetServiceInstanceRequest},

@@ -117,3 +117,33 @@ func (client *Client) GetServiceBrokers(filters ...Filter) ([]ServiceBroker, War
 
 	return fullBrokersList, warnings, err
 }
+
+type migrateServiceBrokerRequestBody struct {
+	BrokerGUID    string `json:"broker_guid,omitempty"`
+}
+
+func (client *Client) MigrateServiceBroker(brokerGUID string) error {
+	requestBody := migrateServiceBrokerRequestBody{
+		BrokerGUID:    brokerGUID,
+	}
+	bodyBytes, err := json.Marshal(requestBody)
+	if err != nil {
+		return err
+	}
+
+	request, err := client.newHTTPRequest(requestOptions{
+		RequestName: internal.PostMigrateServiceBrokerRequest,
+		Body: bytes.NewReader(bodyBytes),
+	})
+
+	if err != nil {
+		return err
+	}
+
+	var serviceBroker ServiceBroker
+	response := cloudcontroller.Response{
+		DecodeJSONResponseInto: &serviceBroker,
+	}
+
+	return client.connection.Make(request, &response)
+}

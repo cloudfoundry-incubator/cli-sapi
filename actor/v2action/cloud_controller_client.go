@@ -75,6 +75,7 @@ type CloudControllerClient interface {
 	GetStack(guid string) (ccv2.Stack, ccv2.Warnings, error)
 	GetStacks(filters ...ccv2.Filter) ([]ccv2.Stack, ccv2.Warnings, error)
 	GetUserProvidedServiceInstanceServiceBindings(userProvidedServiceInstanceGUID string) ([]ccv2.ServiceBinding, ccv2.Warnings, error)
+	MigrateServiceBroker(brokerGUID string) error
 	PollJob(job ccv2.Job) (ccv2.Warnings, error)
 	RestageApplication(app ccv2.Application) (ccv2.Application, ccv2.Warnings, error)
 	SetSpaceQuota(spaceGUID string, quotaGUID string) (ccv2.Warnings, error)

@@ -109,6 +109,7 @@ type commandList struct {
 	Logs                               v6.LogsCommand                               `command:"logs" description:"Tail or show recent logs for an app"`
 	MapRoute                           v6.MapRouteCommand                           `command:"map-route" description:"Add a url route to an app"`
 	Marketplace                        v6.MarketplaceCommand                        `command:"marketplace" alias:"m" description:"List available offerings in the marketplace"`
+	MigrateServiceBroker               v6.MigrateServiceBrokerCommand               `command:"migrate-service-broker" alias:"msb" description:"Migrate a service broker"`
 	OauthToken                         v6.OauthTokenCommand                         `command:"oauth-token" description:"Retrieve and display the OAuth token for the current session"`
 	Orgs                               v6.OrgsCommand                               `command:"orgs" alias:"o" description:"List all orgs"`
 	OrgUsers                           v6.OrgUsersCommand                           `command:"org-users" description:"Show org users by role"`

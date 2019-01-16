@@ -3,6 +3,7 @@ package v2action
 import (
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv2"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv2/constant"
+	"fmt"
 )
 
 type ServiceBroker ccv2.ServiceBroker
@@ -36,5 +37,18 @@ func (actor Actor) GetServiceBrokerByName(brokerName string) (ServiceBroker, War
 		return ServiceBroker{}, Warnings(warnings), err
 	}
 
+	if len(serviceBrokers) < 1 {
+		return ServiceBroker{}, Warnings(warnings), fmt.Errorf("No service broker with name %s", brokerName)
+	}
+
 	return ServiceBroker(serviceBrokers[0]), Warnings(warnings), nil
+}
+
+func (actor Actor) MigrateServiceBrokerByName(brokerName string) error {
+	broker, _, err := actor.GetServiceBrokerByName(brokerName)
+	if err != nil {
+		return err
+	}
+
+	return actor.CloudControllerClient.MigrateServiceBroker(broker.GUID)
 }

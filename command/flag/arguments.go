@@ -264,6 +264,10 @@ type ServiceBrokerArgs struct {
 	URL           string `positional-arg-name:"URL" required:"true" description:"The URL of the service broker"`
 }
 
+type MigrateServiceBrokerArgs struct {
+	ServiceBroker string `positional-arg-name:"SERVICE_BROKER" required:"true" description:"The service broker name"`
+}
+
 type RenameServiceBrokerArgs struct {
 	OldServiceBrokerName string `positional-arg-name:"SERVICE_BROKER" required:"true" description:"The old service broker name"`
 	NewServiceBrokerName string `positional-arg-name:"NEW_SERVICE_BROKER" required:"true" description:"The new service broker name"`
