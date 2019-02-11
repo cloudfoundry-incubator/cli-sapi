@@ -41,6 +41,14 @@ var ErrFailed = errors.New("command failed")
 var ParseErr = errors.New("incorrect type for arg")
 
 func main() {
+
+	if len(os.Args) > 1 {
+		if os.Args[1] != "services" && os.Args[1] != "-h" && os.Args[1] != "help" && os.Args[1] != "--help" {
+			fmt.Println("THIS COMMAND IS NOT MOCKED")
+			os.Exit(0)
+		}
+	}
+
 	defer panichandler.HandlePanic()
 	exitStatus := parse(os.Args[1:], &common.Commands)
 	if exitStatus == switchToV2 {

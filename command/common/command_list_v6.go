@@ -158,7 +158,7 @@ type commandList struct {
 	ServiceBrokers                     v6.ServiceBrokersCommand                     `command:"service-brokers" description:"List service brokers"`
 	ServiceKeys                        v6.ServiceKeysCommand                        `command:"service-keys" alias:"sk" description:"List keys for a service instance"`
 	ServiceKey                         v6.ServiceKeyCommand                         `command:"service-key" description:"Show service key info"`
-	Services                           v6.ServicesCommand                           `command:"services" alias:"s" description:"List all service instances in the target space"`
+	Services                           v6.ServicesCommand                           `command:"services" alias:"s" description:"List all service instances"`
 	Service                            v6.ServiceCommand                            `command:"service" description:"Show service instance info"`
 	SetEnv                             v6.SetEnvCommand                             `command:"set-env" alias:"se" description:"Set an env variable for an app"`
 	SetHealthCheck                     v6.SetHealthCheckCommand                     `command:"set-health-check" description:"Change type of health check performed on an app"`
