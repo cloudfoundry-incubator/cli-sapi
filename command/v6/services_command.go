@@ -9,7 +9,7 @@ import (
 	"code.cloudfoundry.org/cli/actor/v2action"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv2/constant"
 	"code.cloudfoundry.org/cli/command"
-	"code.cloudfoundry.org/cli/command/v6/shared"
+	"code.cloudfoundry.org/cli/shim"
 	"code.cloudfoundry.org/cli/util/sorting"
 )
 
@@ -33,31 +33,17 @@ func (cmd *ServicesCommand) Setup(config command.Config, ui command.UI) error {
 	cmd.Config = config
 	cmd.UI = ui
 	cmd.SharedActor = sharedaction.NewActor(config)
-	ccClient, uaaClient, err := shared.NewClients(config, ui, true)
-	if err != nil {
-		return err
-	}
-	cmd.Actor = v2action.NewActor(ccClient, uaaClient, config)
+	cmd.Actor = shim.Actor{}
 
 	return nil
 }
 
 func (cmd ServicesCommand) Execute(args []string) error {
-	err := cmd.SharedActor.CheckTarget(true, true)
-	if err != nil {
-		return err
-	}
-
-	user, err := cmd.Config.CurrentUser()
-	if err != nil {
-		return err
-	}
-
 	cmd.UI.DisplayTextWithFlavor("Getting services in org {{.OrgName}} / space {{.SpaceName}} as {{.CurrentUser}}...",
 		map[string]interface{}{
-			"OrgName":     cmd.Config.TargetedOrganization().Name,
-			"SpaceName":   cmd.Config.TargetedSpace().Name,
-			"CurrentUser": user.Name,
+			"OrgName":     "ACME",
+			"SpaceName":   "acceptance",
+			"CurrentUser": "developer",
 		})
 	cmd.UI.DisplayNewline()
 
@@ -81,6 +67,7 @@ func (cmd ServicesCommand) Execute(args []string) error {
 		cmd.UI.TranslateText("bound apps"),
 		cmd.UI.TranslateText("last operation"),
 		cmd.UI.TranslateText("broker"),
+		cmd.UI.TranslateText("update available"),
 	}}
 
 	var boundAppNames []string
@@ -96,14 +83,20 @@ func (cmd ServicesCommand) Execute(args []string) error {
 			boundAppNames = append(boundAppNames, boundApplication.AppName)
 		}
 
+		updateAvailableIcon := "✗"
+		if summary.UpdateAvailable {
+			updateAvailableIcon = "✓"
+		}
+
 		table = append(table, []string{
 			summary.Name,
 			serviceLabel,
 			summary.ServicePlan.Name,
 			strings.Join(boundAppNames, ", "),
 			fmt.Sprintf("%s %s", summary.LastOperation.Type, summary.LastOperation.State),
-			summary.Service.ServiceBrokerName},
-		)
+			summary.Service.ServiceBrokerName,
+			updateAvailableIcon,
+		})
 	}
 	cmd.UI.DisplayTableWithHeader("", table, 3)
 

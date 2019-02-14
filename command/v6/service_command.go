@@ -9,7 +9,7 @@ import (
 	"code.cloudfoundry.org/cli/command"
 	"code.cloudfoundry.org/cli/command/flag"
 	"code.cloudfoundry.org/cli/command/translatableerror"
-	"code.cloudfoundry.org/cli/command/v6/shared"
+	"code.cloudfoundry.org/cli/shim"
 )
 
 //go:generate counterfeiter . ServiceActor
@@ -35,22 +35,12 @@ func (cmd *ServiceCommand) Setup(config command.Config, ui command.UI) error {
 	cmd.UI = ui
 	cmd.Config = config
 	cmd.SharedActor = sharedaction.NewActor(config)
-
-	ccClient, uaaClient, err := shared.NewClients(config, ui, true)
-	if err != nil {
-		return err
-	}
-	cmd.Actor = v2action.NewActor(ccClient, uaaClient, config)
+	cmd.Actor = shim.Actor{}
 
 	return nil
 }
 
 func (cmd ServiceCommand) Execute(args []string) error {
-	err := cmd.SharedActor.CheckTarget(true, true)
-	if err != nil {
-		return err
-	}
-
 	if cmd.GUID {
 		return cmd.displayServiceInstanceGUID()
 	}
@@ -70,16 +60,11 @@ func (cmd ServiceCommand) displayServiceInstanceGUID() error {
 }
 
 func (cmd ServiceCommand) displayServiceInstanceSummary() error {
-	user, err := cmd.Config.CurrentUser()
-	if err != nil {
-		return err
-	}
-
 	cmd.UI.DisplayTextWithFlavor("Showing info of service {{.ServiceInstanceName}} in org {{.OrgName}} / space {{.SpaceName}} as {{.UserName}}...", map[string]interface{}{
 		"ServiceInstanceName": cmd.RequiredArgs.ServiceInstance,
-		"OrgName":             cmd.Config.TargetedOrganization().Name,
-		"SpaceName":           cmd.Config.TargetedSpace().Name,
-		"UserName":            user.Name,
+		"OrgName":             "ACME",
+		"SpaceName":           "acceptance",
+		"UserName":            "developer",
 	})
 	cmd.UI.DisplayNewline()
 
@@ -93,6 +78,7 @@ func (cmd ServiceCommand) displayServiceInstanceSummary() error {
 		cmd.displayManagedServiceInstanceSummary(serviceInstanceSummary)
 		cmd.displayManagedServiceInstanceLastOperation(serviceInstanceSummary)
 		cmd.displayBoundApplicationsIfExists(serviceInstanceSummary)
+		cmd.displayUpdateDetailsIfAvailable(serviceInstanceSummary)
 		return nil
 	}
 
@@ -218,4 +204,15 @@ func (cmd ServiceCommand) displayBoundApplicationsIfExists(serviceInstanceSummar
 	}
 
 	cmd.UI.DisplayTableWithHeader("", boundAppsTable, 3)
+}
+
+func (cmd ServiceCommand) displayUpdateDetailsIfAvailable(serviceInstanceSummary v2action.ServiceInstanceSummary) {
+	if !serviceInstanceSummary.UpdateAvailable {
+		return
+	}
+
+	cmd.UI.DisplayNewline()
+	cmd.UI.DisplayText("Update Details:")
+	cmd.UI.DisplayText(serviceInstanceSummary.UpdateDetails)
+	cmd.UI.DisplayText(fmt.Sprintf("To update, run `cf update-service %s`", serviceInstanceSummary.ServiceInstance.Name))
 }

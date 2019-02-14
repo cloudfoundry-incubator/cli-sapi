@@ -26,7 +26,7 @@ type UpdateService struct {
 }
 
 func init() {
-	commandregistry.Register(&UpdateService{})
+	//commandregistry.Register(&UpdateService{})
 }
 
 func (cmd *UpdateService) MetaData() commandregistry.CommandMetadata {

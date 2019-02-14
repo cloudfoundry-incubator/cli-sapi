@@ -31,6 +31,8 @@ type ServiceInstanceSummary struct {
 	ServiceInstanceSharedFrom         ServiceInstanceSharedFrom
 	ServiceInstanceSharedTos          []ServiceInstanceSharedTo
 	BoundApplications                 []BoundApplication
+	UpdateAvailable                   bool
+	UpdateDetails                     string
 }
 
 func (s ServiceInstanceSummary) IsShareable() bool {
