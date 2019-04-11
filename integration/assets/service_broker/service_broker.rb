@@ -14,6 +14,12 @@ Rainbow.enabled = true
 $stdout.sync = true
 $stderr.sync = true
 
+# need this to make colossal-broker work for performance testing
+#if Rack::Utils.respond_to?("key_space_limit=")
+puts "INCREASING KEY SPACE LIMIT"
+Rack::Utils.key_space_limit = 65536 * 1000
+#end
+
 class ServiceInstance
   attr_reader :provision_data, :fetch_count, :deleted
 

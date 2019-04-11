@@ -75,6 +75,9 @@ var _ = SynchronizedAfterSuite(func() {
 	helpers.SetAPI()
 	helpers.LoginCF()
 	helpers.QuickDeleteOrg(ReadOnlyOrg)
+	if benchOrgWasCreated {
+		helpers.QuickDeleteOrg("bench-org")
+	}
 	helpers.DestroyHomeDir(homeDir)
 	GinkgoWriter.Write([]byte(fmt.Sprintf("==============================End of Global Node %d Synchronized After Each==============================", GinkgoParallelNode())))
 }, func() {
