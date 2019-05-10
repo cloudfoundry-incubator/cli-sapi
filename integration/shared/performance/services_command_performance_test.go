@@ -7,6 +7,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gbytes"
 	. "github.com/onsi/gomega/gexec"
 
 	"code.cloudfoundry.org/cli/integration/helpers"
@@ -43,9 +44,18 @@ var _ = Describe("services command performance", func() {
 
 		Eventually(helpers.CF("enable-service-access", serviceName)).Should(Exit(0))
 
+		helpers.WithHelloWorldApp(func(dir string) {
+			session := helpers.CustomCF(helpers.CFEnv{WorkingDirectory: dir}, "push", "my-app")
+			Eventually(session).Should(Say(`start command:\s+%s`, helpers.StaticfileBuildpackStartCommand))
+			Eventually(session).Should(Exit(0))
+		})
+
 		for i := 0; i < numberOfServices; i++ {
 			Eventually(helpers.CF("create-service", serviceName, servicePlan, fmt.Sprintf("instance-%d", i))).Should(Exit(0))
+			session := helpers.CF("bind-service", "my-app", fmt.Sprintf("instance-%d", i))
+			Eventually(session).Should(Exit(0))
 		}
+
 	})
 
 	AfterEach(func() {
