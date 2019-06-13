@@ -1,13 +1,14 @@
 package fakeservicebroker
 
 import (
-	"code.cloudfoundry.org/cli/integration/helpers"
 	"fmt"
+	"net/http"
+
+	"code.cloudfoundry.org/cli/integration/helpers"
 	"github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
 	. "github.com/onsi/gomega/gexec"
-	"net/http"
 )
 
 const (
@@ -33,7 +34,7 @@ func (f *FakeServiceBroker) pushAppIfNecessary() {
 func (f *FakeServiceBroker) pushApp() {
 	Eventually(helpers.CF(
 		"push", f.name,
-		"-p", defaultBrokerPath,
+		"-o", "williammartin/broker",
 		"-m", defaultMemoryLimit,
 	)).Should(Exit(0))
 }
