@@ -3,7 +3,6 @@ package v7_test
 import (
 	"errors"
 
-	"code.cloudfoundry.org/cli/actor/actionerror"
 	"code.cloudfoundry.org/cli/actor/v7action"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3/constant"
 	"code.cloudfoundry.org/cli/command/commandfakes"
@@ -17,7 +16,7 @@ import (
 	. "github.com/onsi/gomega/gbytes"
 )
 
-var _ = Describe("create-service-broker Command", func() {
+var _ = FDescribe("create-service-broker Command", func() {
 	var (
 		cmd             *v7.CreateServiceBrokerCommand
 		testUI          *ui.UI
@@ -63,45 +62,45 @@ var _ = Describe("create-service-broker Command", func() {
 
 	When("checking target fails", func() {
 		BeforeEach(func() {
-			fakeSharedActor.CheckTargetReturns(actionerror.NoOrganizationTargetedError{BinaryName: binaryName})
+			fakeSharedActor.CheckTargetReturns(errors.New("an error occurred"))
 		})
 
 		It("returns an error", func() {
-			Expect(executeErr).To(MatchError(actionerror.NoOrganizationTargetedError{BinaryName: binaryName}))
+			Expect(executeErr).To(MatchError("an error occurred"))
+		})
+	})
 
+	When("fetching the current user fails", func() {
+		BeforeEach(func() {
+			fakeConfig.CurrentUserReturns(configv3.User{}, errors.New("an error occurred"))
+		})
+
+		It("return an error", func() {
+			Expect(executeErr).To(MatchError("an error occurred"))
+		})
+	})
+
+	When("fetching the current user succeeds", func() {
+		BeforeEach(func() {
+			fakeConfig.CurrentUserReturns(configv3.User{Name: "steve"}, nil)
+		})
+
+		It("checks that there is a valid target", func() {
 			Expect(fakeSharedActor.CheckTargetCallCount()).To(Equal(1))
 			checkTargetedOrg, checkTargetedSpace := fakeSharedActor.CheckTargetArgsForCall(0)
 			Expect(checkTargetedOrg).To(BeFalse())
 			Expect(checkTargetedSpace).To(BeFalse())
 		})
-	})
-
-	When("the user is not logged in", func() {
-		var expectedErr error
-
-		BeforeEach(func() {
-			expectedErr = errors.New("some current user error")
-			fakeConfig.CurrentUserReturns(configv3.User{}, expectedErr)
-		})
-
-		It("return an error", func() {
-			Expect(executeErr).To(Equal(expectedErr))
-		})
-	})
-
-	When("the user is logged in", func() {
-		BeforeEach(func() {
-			fakeConfig.CurrentUserReturns(configv3.User{Name: "steve"}, nil)
-		})
 
 		It("displays a message with the username", func() {
-			Expect(testUI.Out).To(Say("Creating service broker %s as %s...", args.ServiceBroker, "steve"))
+			Expect(testUI.Out).To(Say(`Creating service broker %s as %s\.\.\.`, args.ServiceBroker, "steve"))
 		})
 
-		It("calls the CreateServiceBrokerActor", func() {
+		It("passes the data to the actor layer", func() {
 			Expect(fakeActor.CreateServiceBrokerCallCount()).To(Equal(1))
-			credentials := fakeActor.CreateServiceBrokerArgsForCall(0)
-			Expect(credentials).To(Equal(v7action.ServiceBroker{
+
+			serviceBroker := fakeActor.CreateServiceBrokerArgsForCall(0)
+			Expect(serviceBroker).To(Equal(v7action.ServiceBroker{
 				Name: "service-broker-name",
 				URL:  "https://example.org/super-broker",
 				Credentials: v7action.ServiceBrokerCredentials{
@@ -111,6 +110,7 @@ var _ = Describe("create-service-broker Command", func() {
 						Password: "password",
 					},
 				},
+				SpaceGUID: "",
 			}))
 		})
 
@@ -122,7 +122,7 @@ var _ = Describe("create-service-broker Command", func() {
 			Expect(testUI.Out).To(Say("OK"))
 		})
 
-		When("calling the CreateServiceBrokerActor returns an error", func() {
+		When("the actor returns an error", func() {
 			BeforeEach(func() {
 				fakeActor.CreateServiceBrokerReturns(v7action.Warnings{"service-broker-warnings"}, errors.New("fake create-service-broker error"))
 			})
@@ -131,6 +131,35 @@ var _ = Describe("create-service-broker Command", func() {
 				Expect(testUI.Out).NotTo(Say("OK"))
 				Expect(executeErr).To(MatchError("fake create-service-broker error"))
 				Expect(testUI.Err).To(Say("service-broker-warnings"))
+			})
+		})
+
+		When("creating a space scoped broker", func() {
+			BeforeEach(func() {
+				cmd.SpaceScoped = true
+				fakeConfig.TargetedSpaceReturns(configv3.Space{
+					Name: "fake-space-name",
+					GUID: "fake-space-guid",
+				})
+				fakeConfig.TargetedOrganizationNameReturns("fake-org-name")
+			})
+
+			It("checks that a space is targeted", func() {
+				Expect(fakeSharedActor.CheckTargetCallCount()).To(Equal(1))
+				checkTargetedOrg, checkTargetedSpace := fakeSharedActor.CheckTargetArgsForCall(0)
+				Expect(checkTargetedOrg).To(BeFalse())
+				Expect(checkTargetedSpace).To(BeTrue())
+			})
+
+			It("displays the space name in the message", func() {
+				Expect(testUI.Out).To(Say(`Creating service broker %s in org %s / space %s as %s\.\.\.`, args.ServiceBroker, "fake-org-name", "fake-space-name", "steve"))
+			})
+
+			It("looks up the space guid and passes it to the actor", func() {
+				Expect(fakeActor.CreateServiceBrokerCallCount()).To(Equal(1))
+
+				serviceBroker := fakeActor.CreateServiceBrokerArgsForCall(0)
+				Expect(serviceBroker.SpaceGUID).To(Equal("fake-space-guid"))
 			})
 		})
 	})

@@ -7,6 +7,7 @@ import (
 	"code.cloudfoundry.org/cli/command"
 	"code.cloudfoundry.org/cli/command/flag"
 	"code.cloudfoundry.org/cli/command/v7/shared"
+	"code.cloudfoundry.org/cli/util/configv3"
 )
 
 //go:generate counterfeiter . CreateServiceBrokerActor
@@ -43,7 +44,7 @@ func (cmd *CreateServiceBrokerCommand) Setup(config command.Config, ui command.U
 }
 
 func (cmd *CreateServiceBrokerCommand) Execute(args []string) error {
-	err := cmd.SharedActor.CheckTarget(false, false)
+	err := cmd.SharedActor.CheckTarget(false, cmd.SpaceScoped)
 	if err != nil {
 		return err
 	}
@@ -53,15 +54,29 @@ func (cmd *CreateServiceBrokerCommand) Execute(args []string) error {
 		return err
 	}
 
-	cmd.UI.DisplayTextWithFlavor(
-		"Creating service broker {{.ServiceBroker}} as {{.Username}}...",
-		map[string]interface{}{
-			"Username":      user.Name,
-			"ServiceBroker": cmd.RequiredArgs.ServiceBroker,
-		},
-	)
+	var space configv3.Space
+	if cmd.SpaceScoped {
+		space = cmd.Config.TargetedSpace()
+		cmd.UI.DisplayTextWithFlavor(
+			"Creating service broker {{.ServiceBroker}} in org {{.Org}} / space {{.Space}} as {{.Username}}...",
+			map[string]interface{}{
+				"Username":      user.Name,
+				"ServiceBroker": cmd.RequiredArgs.ServiceBroker,
+				"Org":           cmd.Config.TargetedOrganizationName(),
+				"Space":         space.Name,
+			},
+		)
+	} else {
+		cmd.UI.DisplayTextWithFlavor(
+			"Creating service broker {{.ServiceBroker}} as {{.Username}}...",
+			map[string]interface{}{
+				"Username":      user.Name,
+				"ServiceBroker": cmd.RequiredArgs.ServiceBroker,
+			},
+		)
+	}
 
-	serviceBroker := v7action.ServiceBroker{
+	warnings, err := cmd.Actor.CreateServiceBroker(v7action.ServiceBroker{
 		Name: cmd.RequiredArgs.ServiceBroker,
 		URL:  cmd.RequiredArgs.URL,
 		Credentials: v7action.ServiceBrokerCredentials{
@@ -71,10 +86,8 @@ func (cmd *CreateServiceBrokerCommand) Execute(args []string) error {
 				Password: cmd.RequiredArgs.Password,
 			},
 		},
-		SpaceGUID: "",
-	}
-
-	warnings, err := cmd.Actor.CreateServiceBroker(serviceBroker)
+		SpaceGUID: space.GUID,
+	})
 	cmd.UI.DisplayWarnings(warnings)
 
 	if err == nil {
