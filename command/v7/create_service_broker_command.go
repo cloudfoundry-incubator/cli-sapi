@@ -44,7 +44,7 @@ func (cmd *CreateServiceBrokerCommand) Setup(config command.Config, ui command.U
 }
 
 func (cmd *CreateServiceBrokerCommand) Execute(args []string) error {
-	err := cmd.SharedActor.CheckTarget(false, cmd.SpaceScoped)
+	err := cmd.SharedActor.CheckTarget(cmd.SpaceScoped, cmd.SpaceScoped)
 	if err != nil {
 		return err
 	}
@@ -86,7 +86,10 @@ func (cmd *CreateServiceBrokerCommand) Execute(args []string) error {
 				Password: cmd.RequiredArgs.Password,
 			},
 		},
-		SpaceGUID: space.GUID,
+		Relationships: {
+			Space: {
+				Data: {
+					SpaceGUID: space.GUID,
 	})
 	cmd.UI.DisplayWarnings(warnings)
 

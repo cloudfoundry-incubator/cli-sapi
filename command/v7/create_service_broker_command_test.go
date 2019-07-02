@@ -147,7 +147,7 @@ var _ = FDescribe("create-service-broker Command", func() {
 			It("checks that a space is targeted", func() {
 				Expect(fakeSharedActor.CheckTargetCallCount()).To(Equal(1))
 				checkTargetedOrg, checkTargetedSpace := fakeSharedActor.CheckTargetArgsForCall(0)
-				Expect(checkTargetedOrg).To(BeFalse())
+				Expect(checkTargetedOrg).To(BeTrue())
 				Expect(checkTargetedSpace).To(BeTrue())
 			})
 

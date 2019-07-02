@@ -142,22 +142,22 @@ var _ = Describe("ServiceBroker", func() {
 	})
 
 	Describe("CreateServiceBroker", func() {
+		const (
+			name     = "name"
+			url      = "url"
+			username = "username"
+			password = "password"
+		)
+
 		var (
-			warnings   Warnings
-			executeErr error
+			warnings     Warnings
+			executeErr   error
+			spaceGUID    string
+			expectedBody map[string]interface{}
+		)
 
-			credentials = ServiceBroker{
-				Name: "name",
-				URL:  "url",
-				Credentials: ServiceBrokerCredentials{
-					Type: constant.BasicCredentials,
-					Data: ServiceBrokerCredentialsData{
-						Username: "username",
-						Password: "password",
-					},
-				},
-			}
-
+		BeforeEach(func() {
+			spaceGUID = ""
 			expectedBody = map[string]interface{}{
 				"name": "name",
 				"url":  "url",
@@ -169,10 +169,10 @@ var _ = Describe("ServiceBroker", func() {
 					},
 				},
 			}
-		)
+		})
 
 		JustBeforeEach(func() {
-			warnings, executeErr = client.CreateServiceBroker(credentials)
+			warnings, executeErr = client.CreateServiceBroker(name, username, password, url, spaceGUID)
 		})
 
 		When("the Cloud Controller successfully creates the broker", func() {
@@ -194,8 +194,14 @@ var _ = Describe("ServiceBroker", func() {
 
 		When("the broker is space scoped", func() {
 			BeforeEach(func() {
-				credentials.SpaceGUID = "space-guid"
-				expectedBody["space_guid"] = "space-guid"
+				spaceGUID = "space-guid"
+				expectedBody["relationships"] = map[string]interface{}{
+					"space": map[string]interface{}{
+						"data": map[string]string{
+							"guid": "space-guid",
+						},
+					},
+				}
 				server.AppendHandlers(
 					CombineHandlers(
 						VerifyRequest(http.MethodPost, "/v3/service_brokers"),

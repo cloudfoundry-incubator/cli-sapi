@@ -18,11 +18,10 @@ type ServiceBroker struct {
 	Name string `json:"name"`
 	// URL is the url of the service broker.
 	URL string `json:"url"`
-	// SpaceGUID references which space this service broker belongs to. Empty if
-	// not space-scoped.
-	SpaceGUID string `json:"space_guid,omitempty"`
 	// Credentials contains the credentials for authenticating with the service broker.
 	Credentials ServiceBrokerCredentials `json:"credentials"`
+	// This is the relationship for the space GUID
+	Relationships *ServiceBrokerRelationships `json:"relationships,omitempty"`
 }
 
 // ServiceBrokerCredentials represents a data structure for the Credentials
@@ -43,9 +42,21 @@ type ServiceBrokerCredentialsData struct {
 	Password string `json:"password"`
 }
 
+type ServiceBrokerRelationships struct {
+	Space ServiceBrokerRelationshipsSpace `json:"space"`
+}
+
+type ServiceBrokerRelationshipsSpace struct {
+	Data ServiceBrokerRelationshipsSpaceData `json:"data"`
+}
+
+type ServiceBrokerRelationshipsSpaceData struct {
+	GUID string `json:"guid"`
+}
+
 // CreateServiceBroker registers a new service broker.
-func (client *Client) CreateServiceBroker(credentials ServiceBroker) (Warnings, error) {
-	bodyBytes, err := json.Marshal(credentials)
+func (client *Client) CreateServiceBroker(name, username, password, brokerURL, spaceGUID string) (Warnings, error) {
+	bodyBytes, err := json.Marshal(newServiceBroker(name, username, password, brokerURL, spaceGUID))
 	if err != nil {
 		return nil, err
 	}
@@ -87,4 +98,30 @@ func (client *Client) GetServiceBrokers() ([]ServiceBroker, Warnings, error) {
 	})
 
 	return fullList, warnings, err
+}
+
+func newServiceBroker(name, username, password, brokerURL, spaceGUID string) ServiceBroker {
+	serviceBroker := ServiceBroker{
+		Name: name,
+		URL:  brokerURL,
+		Credentials: ServiceBrokerCredentials{
+			Type: constant.BasicCredentials,
+			Data: ServiceBrokerCredentialsData{
+				Username: username,
+				Password: password,
+			},
+		},
+	}
+
+	if spaceGUID != "" {
+		serviceBroker.Relationships = &ServiceBrokerRelationships{
+			Space: ServiceBrokerRelationshipsSpace{
+				Data: ServiceBrokerRelationshipsSpaceData{
+					GUID: spaceGUID,
+				},
+			},
+		}
+	}
+
+	return serviceBroker
 }
