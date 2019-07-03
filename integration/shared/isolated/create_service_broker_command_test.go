@@ -13,7 +13,6 @@ var _ = Describe("create-service-broker command", func() {
 	var brokerName string
 
 	BeforeEach(func() {
-		// TODO: remove that when capi-release is cut with v3 create-service-broker functionality
 		helpers.SkipIfV7AndVersionLessThan("3.72.0")
 
 		brokerName = helpers.NewServiceBrokerName()
@@ -91,11 +90,9 @@ var _ = Describe("create-service-broker command", func() {
 				})
 			})
 
-			FWhen("the --space-scoped flag is passed", func() {
+			When("the --space-scoped flag is passed", func() {
 				BeforeEach(func() {
-					// TODO: replace skip with versioned skip when
-					// https://www.pivotaltracker.com/story/show/166063310 is resolved.
-					// helpers.SkipIfV7()
+					helpers.SkipIfV7AndVersionLessThan("3.74.0")
 				})
 
 				When("no org or space is targeted", func() {
@@ -103,7 +100,7 @@ var _ = Describe("create-service-broker command", func() {
 						helpers.ClearTarget()
 					})
 
-					FIt("displays an informative error that a space must be targeted", func() {
+					It("displays an informative error that a space must be targeted", func() {
 						session := helpers.CF("create-service-broker", "space-scoped-broker", "username", "password", "http://example.com", "--space-scoped")
 						Eventually(session).Should(Say("FAILED"))
 						Eventually(session.Err).Should(Say("No org targeted, use 'cf target -o ORG' to target an org."))
@@ -152,11 +149,11 @@ var _ = Describe("create-service-broker command", func() {
 		})
 	})
 
-	FWhen("the broker URL is invalid", func() {
+	When("the broker URL is invalid", func() {
 		BeforeEach(func() {
 			// TODO: replace skip with versioned skip when
 			// https://www.pivotaltracker.com/story/show/166215494 is resolved.
-			// helpers.SkipIfV7()
+			helpers.SkipIfV7()
 		})
 
 		It("displays a relevant error", func() {

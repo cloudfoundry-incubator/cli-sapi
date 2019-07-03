@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"code.cloudfoundry.org/cli/actor/v7action"
-	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3/constant"
 	"code.cloudfoundry.org/cli/command/commandfakes"
 	"code.cloudfoundry.org/cli/command/flag"
 	v7 "code.cloudfoundry.org/cli/command/v7"
@@ -16,7 +15,7 @@ import (
 	. "github.com/onsi/gomega/gbytes"
 )
 
-var _ = FDescribe("create-service-broker Command", func() {
+var _ = Describe("create-service-broker Command", func() {
 	var (
 		cmd             *v7.CreateServiceBrokerCommand
 		testUI          *ui.UI
@@ -99,19 +98,14 @@ var _ = FDescribe("create-service-broker Command", func() {
 		It("passes the data to the actor layer", func() {
 			Expect(fakeActor.CreateServiceBrokerCallCount()).To(Equal(1))
 
-			serviceBroker := fakeActor.CreateServiceBrokerArgsForCall(0)
-			Expect(serviceBroker).To(Equal(v7action.ServiceBroker{
-				Name: "service-broker-name",
-				URL:  "https://example.org/super-broker",
-				Credentials: v7action.ServiceBrokerCredentials{
-					Type: constant.BasicCredentials,
-					Data: v7action.ServiceBrokerCredentialsData{
-						Username: "username",
-						Password: "password",
-					},
-				},
-				SpaceGUID: "",
-			}))
+			n, u, p, l, s := fakeActor.CreateServiceBrokerArgsForCall(0)
+
+			Expect(n).To(Equal("service-broker-name"))
+			Expect(u).To(Equal("username"))
+			Expect(p).To(Equal("password"))
+			Expect(l).To(Equal("https://example.org/super-broker"))
+			Expect(s).To(Equal(""))
+
 		})
 
 		It("displays the warnings", func() {
@@ -158,8 +152,8 @@ var _ = FDescribe("create-service-broker Command", func() {
 			It("looks up the space guid and passes it to the actor", func() {
 				Expect(fakeActor.CreateServiceBrokerCallCount()).To(Equal(1))
 
-				serviceBroker := fakeActor.CreateServiceBrokerArgsForCall(0)
-				Expect(serviceBroker.SpaceGUID).To(Equal("fake-space-guid"))
+				_, _, _, _, s := fakeActor.CreateServiceBrokerArgsForCall(0)
+				Expect(s).To(Equal("fake-space-guid"))
 			})
 		})
 	})

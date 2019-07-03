@@ -3,7 +3,6 @@ package v7
 import (
 	"code.cloudfoundry.org/cli/actor/sharedaction"
 	"code.cloudfoundry.org/cli/actor/v7action"
-	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3/constant"
 	"code.cloudfoundry.org/cli/command"
 	"code.cloudfoundry.org/cli/command/flag"
 	"code.cloudfoundry.org/cli/command/v7/shared"
@@ -13,7 +12,7 @@ import (
 //go:generate counterfeiter . CreateServiceBrokerActor
 
 type CreateServiceBrokerActor interface {
-	CreateServiceBroker(v7action.ServiceBroker) (v7action.Warnings, error)
+	CreateServiceBroker(name, user, password, url, spaceGUID string) (v7action.Warnings, error)
 }
 
 type CreateServiceBrokerCommand struct {
@@ -76,21 +75,7 @@ func (cmd *CreateServiceBrokerCommand) Execute(args []string) error {
 		)
 	}
 
-	warnings, err := cmd.Actor.CreateServiceBroker(v7action.ServiceBroker{
-		Name: cmd.RequiredArgs.ServiceBroker,
-		URL:  cmd.RequiredArgs.URL,
-		Credentials: v7action.ServiceBrokerCredentials{
-			Type: constant.BasicCredentials,
-			Data: v7action.ServiceBrokerCredentialsData{
-				Username: cmd.RequiredArgs.Username,
-				Password: cmd.RequiredArgs.Password,
-			},
-		},
-		Relationships: {
-			Space: {
-				Data: {
-					SpaceGUID: space.GUID,
-	})
+	warnings, err := cmd.Actor.CreateServiceBroker(cmd.RequiredArgs.ServiceBroker, cmd.RequiredArgs.Username, cmd.RequiredArgs.Password, cmd.RequiredArgs.URL, space.GUID)
 	cmd.UI.DisplayWarnings(warnings)
 
 	if err == nil {

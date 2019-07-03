@@ -10,8 +10,18 @@ import (
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3/internal"
 )
 
-// ServiceBroker represents a Cloud Controller V3 Service Broker.
+// ServiceBroker represents Service Broker data
 type ServiceBroker struct {
+	// GUID is a unique service broker identifier.
+	GUID string
+	// Name is the name of the service broker.
+	Name string
+	// URL is the url of the service broker.
+	URL string
+}
+
+// serviceBrokerPresentation represents a Cloud Controller V3 Service Broker.
+type serviceBrokerPresentation struct {
 	// GUID is a unique service broker identifier.
 	GUID string `json:"guid,omitempty"`
 	// Name is the name of the service broker.
@@ -19,38 +29,47 @@ type ServiceBroker struct {
 	// URL is the url of the service broker.
 	URL string `json:"url"`
 	// Credentials contains the credentials for authenticating with the service broker.
-	Credentials ServiceBrokerCredentials `json:"credentials"`
+	Credentials serviceBrokerCredentials `json:"credentials"`
 	// This is the relationship for the space GUID
-	Relationships *ServiceBrokerRelationships `json:"relationships,omitempty"`
+	Relationships *serviceBrokerRelationships `json:"relationships,omitempty"`
 }
 
-// ServiceBrokerCredentials represents a data structure for the Credentials
+// serviceBrokerCredentials represents a data structure for the Credentials
 // of V3 Service Broker.
-type ServiceBrokerCredentials struct {
+type serviceBrokerCredentials struct {
 	// Type is the type of credentials for the service broker, e.g. "basic"
 	Type constant.ServiceBrokerCredentialsType `json:"type"`
 	// Data is the credentials data of the service broker of a particular type.
-	Data ServiceBrokerCredentialsData `json:"data"`
+	Data serviceBrokerCredentialsData `json:"data"`
 }
 
-// ServiceBrokerCredentialsData represents a data structure for the Credentials Data
+// serviceBrokerCredentialsData represents a data structure for the Credentials Data
 // of V3 Service Broker Credentials.
-type ServiceBrokerCredentialsData struct {
+type serviceBrokerCredentialsData struct {
 	// Username is the Basic Auth username for the service broker.
 	Username string `json:"username"`
 	// Password is the Basic Auth password for the service broker.
 	Password string `json:"password"`
 }
 
-type ServiceBrokerRelationships struct {
-	Space ServiceBrokerRelationshipsSpace `json:"space"`
+// serviceBrokerRelationships represents a data structure for the relationships data
+// of V3 Service Broker Relationships.
+type serviceBrokerRelationships struct {
+	// Space represents the space that a space-scoped broker is in
+	Space serviceBrokerRelationshipsSpace `json:"space"`
 }
 
-type ServiceBrokerRelationshipsSpace struct {
-	Data ServiceBrokerRelationshipsSpaceData `json:"data"`
+// serviceBrokerRelationshipsSpace represents a data structure for the relationships space data
+// of V3 Service Broker Relationships.
+type serviceBrokerRelationshipsSpace struct {
+	// Data holds the space GUID object
+	Data serviceBrokerRelationshipsSpaceData `json:"data"`
 }
 
-type ServiceBrokerRelationshipsSpaceData struct {
+// serviceBrokerRelationshipsSpaceData represents a data structure for the relationships space GUID data
+// of V3 Service Broker Relationships.
+type serviceBrokerRelationshipsSpaceData struct {
+	// GUID is the space guid associated with a space-scoped broker
 	GUID string `json:"guid"`
 }
 
@@ -85,12 +104,12 @@ func (client *Client) GetServiceBrokers() ([]ServiceBroker, Warnings, error) {
 	}
 
 	var fullList []ServiceBroker
-	warnings, err := client.paginate(request, ServiceBroker{}, func(item interface{}) error {
-		if serviceBroker, ok := item.(ServiceBroker); ok {
-			fullList = append(fullList, serviceBroker)
+	warnings, err := client.paginate(request, serviceBrokerPresentation{}, func(item interface{}) error {
+		if serviceBroker, ok := item.(serviceBrokerPresentation); ok {
+			fullList = append(fullList, extractServiceBrokerData(serviceBroker))
 		} else {
 			return ccerror.UnknownObjectInListError{
-				Expected:   ServiceBroker{},
+				Expected:   serviceBrokerPresentation{},
 				Unexpected: item,
 			}
 		}
@@ -100,13 +119,13 @@ func (client *Client) GetServiceBrokers() ([]ServiceBroker, Warnings, error) {
 	return fullList, warnings, err
 }
 
-func newServiceBroker(name, username, password, brokerURL, spaceGUID string) ServiceBroker {
-	serviceBroker := ServiceBroker{
+func newServiceBroker(name, username, password, brokerURL, spaceGUID string) serviceBrokerPresentation {
+	sbp := serviceBrokerPresentation{
 		Name: name,
 		URL:  brokerURL,
-		Credentials: ServiceBrokerCredentials{
+		Credentials: serviceBrokerCredentials{
 			Type: constant.BasicCredentials,
-			Data: ServiceBrokerCredentialsData{
+			Data: serviceBrokerCredentialsData{
 				Username: username,
 				Password: password,
 			},
@@ -114,14 +133,22 @@ func newServiceBroker(name, username, password, brokerURL, spaceGUID string) Ser
 	}
 
 	if spaceGUID != "" {
-		serviceBroker.Relationships = &ServiceBrokerRelationships{
-			Space: ServiceBrokerRelationshipsSpace{
-				Data: ServiceBrokerRelationshipsSpaceData{
+		sbp.Relationships = &serviceBrokerRelationships{
+			Space: serviceBrokerRelationshipsSpace{
+				Data: serviceBrokerRelationshipsSpaceData{
 					GUID: spaceGUID,
 				},
 			},
 		}
 	}
 
-	return serviceBroker
+	return sbp
+}
+
+func extractServiceBrokerData(sbp serviceBrokerPresentation) ServiceBroker {
+	return ServiceBroker{
+		Name: sbp.Name,
+		URL:  sbp.URL,
+		GUID: sbp.GUID,
+	}
 }
