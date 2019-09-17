@@ -19,7 +19,7 @@ var _ = FDescribe("delete-service-broker command", func() {
 		})
 
 		It("displays the help information", func() {
-			session := helpers.CF("delete-route", "--help")
+			session := helpers.CF("delete-service-broker", "--help")
 			Eventually(session).Should(Say(`NAME:`))
 			Eventually(session).Should(Say(`delete-service-broker - Delete a service broker\n`))
 			Eventually(session).Should(Say(`\n`))
@@ -64,8 +64,9 @@ var _ = FDescribe("delete-service-broker command", func() {
 
 		When("an org and space are targeted", func() {
 			var (
-				orgName   string
-				spaceName string
+				orgName    string
+				spaceName  string
+				brokerName string
 			)
 
 			BeforeEach(func() {
@@ -83,11 +84,15 @@ var _ = FDescribe("delete-service-broker command", func() {
 				var (
 					service     string
 					servicePlan string
+					userName    string
+					password    string
 					broker      *fakeservicebroker.FakeServiceBroker
 				)
 
 				BeforeEach(func() {
-					broker = fakeservicebroker.New().Register()
+					userName, password = helpers.GetCredentials()
+					brokerName = "some-broker"
+					broker = fakeservicebroker.New().WithName(brokerName).Deploy()
 					service = broker.ServiceName()
 					servicePlan = broker.ServicePlanName()
 
@@ -99,7 +104,10 @@ var _ = FDescribe("delete-service-broker command", func() {
 				})
 
 				It("should delete the service broker", func() {
-					session := helpers.CF("delete-service-broker", broker.Name(), "-f")
+					session := helpers.CF("create-service-broker", brokerName, userName, password, broker.URL())
+					Eventually(session).Should(Exit(0))
+
+					session = helpers.CF("delete-service-broker", broker.Name(), "-f")
 					Eventually(session).Should(Exit(0))
 
 					session = helpers.CF("service-brokers")
@@ -119,7 +127,7 @@ var _ = FDescribe("delete-service-broker command", func() {
 			When("the service broker doesn't exist", func() {
 				It("should exit 0 (idempotent case)", func() {
 					session := helpers.CF("delete-service-broker", "not-a-broker", "-f")
-					Eventually(session).Should(Say(`Service broker 'non-existent-broker' does not exist.`))
+					Eventually(session).Should(Say(`Service broker 'not-a-broker' does not exist.`))
 					Eventually(session).Should(Exit(0))
 				})
 			})
