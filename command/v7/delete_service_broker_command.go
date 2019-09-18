@@ -84,7 +84,10 @@ func (cmd DeleteServiceBrokerCommand) Execute(args []string) error {
 	if err != nil {
 		if _, ok := err.(actionerror.ServiceBrokerNotFoundError); ok {
 			// TODO: Verify the correct error message to display for idempotent case
-			cmd.UI.DisplayText(`Unable to delete. ` + err.Error())
+			//cmd.UI.DisplayText(`Unable to delete. ` + err.Error())
+			cmd.UI.DisplayText("Service broker '{{.ServiceBroker}}' does not exist.", map[string]interface{}{
+				"ServiceBroker": serviceBrokerName,
+			})
 			cmd.UI.DisplayOK()
 			return nil
 		}

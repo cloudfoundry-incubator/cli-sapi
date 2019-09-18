@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
-var _ = FDescribe("delete-service-broker command", func() {
+var _ = Describe("delete-service-broker command", func() {
 	Context("Help", func() {
 		It("appears in cf help -a", func() {
 			session := helpers.CF("help", "-a")
@@ -44,102 +44,77 @@ var _ = FDescribe("delete-service-broker command", func() {
 			helpers.LoginCF()
 		})
 
-		// TODO: See ticket 166502005 for details, we are unsure if this behaviour is expected or not
-		//When("the environment is not setup correctly", func() {
-		//	It("fails with the appropriate errors", func() {
-		//		By("checking the org is targeted correctly")
-		//		session := helpers.CF("delete-service-broker", "service-broker-name", "-f")
-		//		Eventually(session).Should(Say("FAILED"))
-		//		Eventually(session.Out).Should(Say("No org and space targeted, use 'cf target -o ORG -s SPACE' to target an org and space"))
-		//		Eventually(session).Should(Exit(1))
-		//
-		//		By("checking the space is targeted correctly")
-		//		helpers.TargetOrg(ReadOnlyOrg)
-		//		session = helpers.CF("delete-service-broker", "service-broker-name", "-f")
-		//		Eventually(session).Should(Say("FAILED"))
-		//		Eventually(session.Out).Should(Say(`No space targeted, use 'cf target -s' to target a space\.`))
-		//		Eventually(session).Should(Exit(1))
-		//	})
-		//})
-
-		When("an org and space are targeted", func() {
+		FWhen("there is a service broker without any instances", func() {
 			var (
-				orgName    string
-				spaceName  string
-				brokerName string
+				orgName   string
+				spaceName string
+				broker    *fakeservicebroker.FakeServiceBroker
 			)
 
 			BeforeEach(func() {
+				// TODO: why do we create these when the broker helper also does it?
 				orgName = helpers.NewOrgName()
 				spaceName = helpers.NewSpaceName()
-				helpers.CreateOrgAndSpace(orgName, spaceName)
-				helpers.TargetOrgAndSpace(orgName, spaceName)
+				helpers.SetupCF(orgName, spaceName)
+				broker = fakeservicebroker.New().Register()
+
+				helpers.ClearTarget()
 			})
 
 			AfterEach(func() {
+				//broker.Destroy()
 				helpers.QuickDeleteOrg(orgName)
 			})
 
-			When("there is a service broker without any instances", func() {
-				var (
-					service     string
-					servicePlan string
-					userName    string
-					password    string
-					broker      *fakeservicebroker.FakeServiceBroker
-				)
+			It("should delete the service broker", func() {
+				// TODO: should this not be part of the broker helper?
+				session := helpers.CF("enable-service-access", broker.ServiceName())
+				Eventually(session).Should(Exit(0))
 
-				BeforeEach(func() {
-					userName, password = helpers.GetCredentials()
-					brokerName = "some-broker"
-					broker = fakeservicebroker.New().WithName(brokerName).Deploy()
-					service = broker.ServiceName()
-					servicePlan = broker.ServicePlanName()
+				// Check our setup before testing
+				helpers.TargetOrgAndSpace(orgName, spaceName)
 
-					Eventually(helpers.CF("enable-service-access", service)).Should(Exit(0))
-				})
+				session = helpers.CF("service-brokers")
+				Eventually(session).Should(Say(broker.Name()))
+				Eventually(session).Should(Exit(0))
 
-				AfterEach(func() {
-					broker.Destroy()
-				})
+				session = helpers.CF("marketplace")
+				Eventually(session).Should(Say(broker.ServicePlanName()))
+				Eventually(session).Should(Exit(0))
 
-				It("should delete the service broker", func() {
-					session := helpers.CF("create-service-broker", brokerName, userName, password, broker.URL())
-					Eventually(session).Should(Exit(0))
+				// Do the action
+				helpers.ClearTarget()
+				session = helpers.CF("delete-service-broker", broker.Name(), "-f")
+				Eventually(session).Should(Exit(0))
 
-					session = helpers.CF("delete-service-broker", broker.Name(), "-f")
-					Eventually(session).Should(Exit(0))
+				// Check the world has changed
+				helpers.TargetOrgAndSpace(orgName, spaceName)
 
-					session = helpers.CF("service-brokers")
-					Consistently(session).ShouldNot(Say(broker.Name()))
-					Eventually(session).Should(Exit(0))
+				session = helpers.CF("service-brokers")
+				Consistently(session).ShouldNot(Say(broker.Name()))
+				Eventually(session).Should(Exit(0))
 
-					session = helpers.CF("marketplace")
-					Consistently(session).ShouldNot(Say(servicePlan))
-					Eventually(session).Should(Exit(0))
-
-					session = helpers.CF("services")
-					Consistently(session).ShouldNot(Say(service))
-					Eventually(session).Should(Exit(0))
-				})
+				session = helpers.CF("marketplace")
+				Consistently(session).ShouldNot(Say(broker.ServicePlanName()))
+				Eventually(session).Should(Exit(0))
 			})
+		})
 
-			When("the service broker doesn't exist", func() {
-				It("should exit 0 (idempotent case)", func() {
-					session := helpers.CF("delete-service-broker", "not-a-broker", "-f")
-					Eventually(session).Should(Say(`Service broker 'not-a-broker' does not exist.`))
-					Eventually(session).Should(Exit(0))
-				})
+		When("the service broker doesn't exist", func() {
+			It("should exit 0 (idempotent case)", func() {
+				session := helpers.CF("delete-service-broker", "not-a-broker", "-f")
+				Eventually(session).Should(Say(`Service broker 'not-a-broker' does not exist.`))
+				Eventually(session).Should(Exit(0))
 			})
+		})
 
-			When("the service broker is not specified", func() {
-				It("displays error and exits 1", func() {
-					session := helpers.CF("delete-service-broker")
-					Eventually(session.Err).Should(Say("Incorrect Usage: the required argument `SERVICE_BROKER` was not provided\n"))
-					Eventually(session.Err).Should(Say("\n"))
-					Eventually(session).Should(Say("NAME:\n"))
-					Eventually(session).Should(Exit(1))
-				})
+		When("the service broker is not specified", func() {
+			It("displays error and exits 1", func() {
+				session := helpers.CF("delete-service-broker")
+				Eventually(session.Err).Should(Say("Incorrect Usage: the required argument `SERVICE_BROKER` was not provided\n"))
+				Eventually(session.Err).Should(Say("\n"))
+				Eventually(session).Should(Say("NAME:\n"))
+				Eventually(session).Should(Exit(1))
 			})
 		})
 	})
