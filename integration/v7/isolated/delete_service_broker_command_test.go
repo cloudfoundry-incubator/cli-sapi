@@ -70,6 +70,7 @@ var _ = Describe("delete-service-broker command", func() {
 				Eventually(session).Should(Exit(0))
 
 				session = helpers.CF("marketplace")
+				Consistently(session).ShouldNot(Say(broker.ServiceName()))
 				Consistently(session).ShouldNot(Say(broker.ServicePlanName()))
 				Eventually(session).Should(Exit(0))
 			})

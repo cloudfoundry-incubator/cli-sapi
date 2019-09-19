@@ -51,12 +51,6 @@ var _ = Describe("delete-service-broker Command", func() {
 			Actor:        fakeActor,
 		}
 
-		// TODO: See ticket 166502005 for details, we are unsure if this behaviour is expected or not
-		//fakeConfig.TargetedOrganizationReturns(configv3.Organization{
-		//	Name: "some-org",
-		//	GUID: "some-org-guid",
-		//})
-
 		fakeConfig.CurrentUserReturns(configv3.User{Name: "steve"}, nil)
 	})
 
@@ -64,32 +58,20 @@ var _ = Describe("delete-service-broker Command", func() {
 		executeErr = cmd.Execute(nil)
 	})
 
-	// TODO: See ticket 166502005 for details, we are unsure if this behaviour is expected or not
-	//When("checking target fails", func() {
-	//	BeforeEach(func() {
-	//		fakeSharedActor.CheckTargetReturns(actionerror.NoOrganizationTargetedError{BinaryName: binaryName})
-	//	})
-	//
-	//	It("returns an error", func() {
-	//		Expect(executeErr).To(MatchError(actionerror.NoOrganizationTargetedError{BinaryName: binaryName}))
-	//
-	//		Expect(fakeSharedActor.CheckTargetCallCount()).To(Equal(1))
-	//		checkTargetedOrg, checkTargetedSpace := fakeSharedActor.CheckTargetArgsForCall(0)
-	//		Expect(checkTargetedOrg).To(BeTrue())
-	//		Expect(checkTargetedSpace).To(BeFalse())
-	//	})
-	//})
-
 	When("the user is not logged in", func() {
-		var expectedErr error
-
 		BeforeEach(func() {
-			expectedErr = errors.New("some current user error")
-			fakeConfig.CurrentUserReturns(configv3.User{}, expectedErr)
+			fakeSharedActor.CheckTargetReturns(actionerror.NotLoggedInError{
+				BinaryName: binaryName,
+			})
 		})
 
-		It("return an error", func() {
-			Expect(executeErr).To(Equal(expectedErr))
+		It("returns an error", func() {
+			Expect(executeErr).To(MatchError(actionerror.NotLoggedInError{BinaryName: binaryName}))
+
+			Expect(fakeSharedActor.CheckTargetCallCount()).To(Equal(1))
+			checkTargetedOrg, checkTargetedSpace := fakeSharedActor.CheckTargetArgsForCall(0)
+			Expect(checkTargetedOrg).To(BeFalse())
+			Expect(checkTargetedSpace).To(BeFalse())
 		})
 	})
 
@@ -203,7 +185,7 @@ var _ = Describe("delete-service-broker Command", func() {
 
 				Expect(testUI.Err).To(Say("some-warning"))
 				Expect(testUI.Out).To(Say(`Deleting service-broker %s...`, serviceBrokerName))
-				Expect(testUI.Out).To(Say(`Unable to delete. Service broker '%s' not found.`, serviceBrokerName))
+				Expect(testUI.Out).To(Say(`Service broker '%s' does not exist.`, serviceBrokerName))
 				Expect(testUI.Out).To(Say("OK"))
 			})
 		})

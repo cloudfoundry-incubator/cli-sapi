@@ -44,13 +44,7 @@ func (cmd *DeleteServiceBrokerCommand) Setup(config command.Config, ui command.U
 }
 
 func (cmd DeleteServiceBrokerCommand) Execute(args []string) error {
-	// TODO: See ticket 166502005 for details, we are unsure if this behaviour is expected or not
-	//err := cmd.SharedActor.CheckTarget(true, false)
-	//if err != nil {
-	//	return err
-	//}
-
-	_, err := cmd.Config.CurrentUser()
+	err := cmd.SharedActor.CheckTarget(false, false)
 	if err != nil {
 		return err
 	}
