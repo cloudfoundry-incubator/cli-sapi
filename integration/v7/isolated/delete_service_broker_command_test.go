@@ -44,51 +44,26 @@ var _ = Describe("delete-service-broker command", func() {
 			helpers.LoginCF()
 		})
 
-		FWhen("there is a service broker without any instances", func() {
+		When("there is a service broker without any instances", func() {
 			var (
-				orgName   string
-				spaceName string
-				broker    *fakeservicebroker.FakeServiceBroker
+				orgName string
+				broker  *fakeservicebroker.FakeServiceBroker
 			)
 
 			BeforeEach(func() {
-				// TODO: why do we create these when the broker helper also does it?
 				orgName = helpers.NewOrgName()
-				spaceName = helpers.NewSpaceName()
-				helpers.SetupCF(orgName, spaceName)
-				broker = fakeservicebroker.New().Register()
-
-				helpers.ClearTarget()
+				helpers.SetupCF(orgName, helpers.NewSpaceName())
+				broker = fakeservicebroker.New().EnsureBrokerIsAvailable()
+				broker.EnableServiceAccess()
 			})
 
 			AfterEach(func() {
-				//broker.Destroy()
 				helpers.QuickDeleteOrg(orgName)
 			})
 
 			It("should delete the service broker", func() {
-				// TODO: should this not be part of the broker helper?
-				session := helpers.CF("enable-service-access", broker.ServiceName())
+				session := helpers.CF("delete-service-broker", broker.Name(), "-f")
 				Eventually(session).Should(Exit(0))
-
-				// Check our setup before testing
-				helpers.TargetOrgAndSpace(orgName, spaceName)
-
-				session = helpers.CF("service-brokers")
-				Eventually(session).Should(Say(broker.Name()))
-				Eventually(session).Should(Exit(0))
-
-				session = helpers.CF("marketplace")
-				Eventually(session).Should(Say(broker.ServicePlanName()))
-				Eventually(session).Should(Exit(0))
-
-				// Do the action
-				helpers.ClearTarget()
-				session = helpers.CF("delete-service-broker", broker.Name(), "-f")
-				Eventually(session).Should(Exit(0))
-
-				// Check the world has changed
-				helpers.TargetOrgAndSpace(orgName, spaceName)
 
 				session = helpers.CF("service-brokers")
 				Consistently(session).ShouldNot(Say(broker.Name()))
