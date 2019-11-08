@@ -1,6 +1,9 @@
 package isolated
 
 import (
+	"fmt"
+	"os/exec"
+
 	"code.cloudfoundry.org/cli/integration/helpers"
 	"code.cloudfoundry.org/cli/integration/helpers/fakeservicebroker"
 	. "github.com/onsi/ginkgo"
@@ -27,7 +30,7 @@ var _ = Describe("update-service-broker command", func() {
 
 		It("updates the service broker", func() {
 			broker1 := fakeservicebroker.New().EnsureBrokerIsAvailable()
-			broker2 := fakeservicebroker.New().WithName("single-use").EnsureAppIsDeployed()
+			broker2 := fakeservicebroker.New().WithName(helpers.NewServiceBrokerName()).EnsureAppIsDeployed()
 			defer broker2.Destroy()
 
 			session := helpers.CF("update-service-broker", broker1.Name(), broker2.Username(), broker2.Password(), broker2.URL())
@@ -66,7 +69,19 @@ var _ = Describe("update-service-broker command", func() {
 			})
 
 			It("should yield a warning", func() {
-				session := helpers.CF("update-service-broker", broker.Name(), broker.Username(), broker.Password(), broker.URL())
+				const (
+					DebugOutPrefix = "OUT: "
+					DebugErrPrefix = "ERR: "
+				)
+
+				session, err := Start(
+					exec.Command("curl", fmt.Sprintf("%s/v2/catalog", broker.URL())),
+					NewPrefixedWriter(DebugOutPrefix, GinkgoWriter),
+					NewPrefixedWriter(DebugErrPrefix, GinkgoWriter))
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(session).Should(Exit(0))
+
+				session = helpers.CF("update-service-broker", broker.Name(), broker.Username(), broker.Password(), broker.URL())
 
 				Eventually(session.Wait().Out).Should(SatisfyAll(
 					Say("Updating service broker %s as %s...", broker.Name(), cfUsername),
