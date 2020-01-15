@@ -124,6 +124,10 @@ func (cmd LabelUpdater) executeApp() error {
 }
 
 func (cmd LabelUpdater) executeDomain() error {
+	if err := cmd.SharedActor.CheckTarget(false, false); err != nil {
+		return err
+	}
+
 	cmd.displayMessage()
 
 	warnings, err := cmd.Actor.UpdateDomainLabelsByDomainName(cmd.targetResource.ResourceName, cmd.labels)
