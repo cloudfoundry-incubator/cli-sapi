@@ -193,11 +193,15 @@ func setSlice(fieldName string, store reflect.Value, value interface{}) error {
 	arr := reflect.MakeSlice(reflect.SliceOf(elemType), len(vs), len(vs))
 	for i, v := range vs {
 		vv := valueOfWithDenumberification(v)
+		if !vv.IsValid() {
+			continue
+		}
 
 		if vv.Type().AssignableTo(elemType) {
 			arr.Index(i).Set(vv)
 			continue
 		}
+
 		if vv.Type().ConvertibleTo(elemType) {
 			arr.Index(i).Set(vv.Convert(elemType))
 			continue
@@ -238,7 +242,7 @@ func tryToConvertMapOfNullStrings(value interface{}) (reflect.Value, bool) {
 func valueOfWithDenumberification(v interface{}) reflect.Value {
 	vv := reflect.ValueOf(v)
 
-	if vv.Type() == jsonNumberType {
+	if vv.IsValid() && vv.Type() == jsonNumberType {
 		num := json.Number(vv.String())
 		// Extend to support other number types as needed
 		if i64, err := num.Int64(); err == nil {
