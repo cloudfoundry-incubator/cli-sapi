@@ -1,6 +1,7 @@
 package v7action_test
 
 import (
+	"code.cloudfoundry.org/cli/api/cloudcontroller/ccerror"
 	"errors"
 
 	"code.cloudfoundry.org/cli/actor/actionerror"
@@ -8,6 +9,7 @@ import (
 	"code.cloudfoundry.org/cli/actor/v7action/v7actionfakes"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3"
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 )
 
@@ -23,131 +25,104 @@ var _ = Describe("Service Offering Actions", func() {
 	})
 
 	Describe("GetServiceOfferingByNameAndBroker", func() {
-		const (
-			serviceOfferingName = "myServiceOffering"
-		)
-
-		var (
-			serviceOffering   ServiceOffering
-			warnings          Warnings
-			executionError    error
-			serviceBrokerName string
-		)
-
-		BeforeEach(func() {
-			serviceBrokerName = ""
-		})
-
-		JustBeforeEach(func() {
-			serviceOffering, warnings, executionError = actor.GetServiceOfferingByNameAndBroker(
-				serviceOfferingName,
-				serviceBrokerName,
+		It("delegates to the client method", func() {
+			fakeCloudControllerClient.GetServiceOfferingByNameAndBrokerReturns(
+				ccv3.ServiceOffering{Name: "fakeServiceOfferingName"},
+				ccv3.Warnings{"a warning"},
+				nil,
 			)
+
+			serviceOffering, warnings, executionError := actor.GetServiceOfferingByNameAndBroker("fakeServiceOfferingName", "fakeServiceBrokerName")
+
+			Expect(serviceOffering.Name).To(Equal("fakeServiceOfferingName"))
+			Expect(warnings).To(ConsistOf("a warning"))
+			Expect(executionError).NotTo(HaveOccurred())
+
+			Expect(fakeCloudControllerClient.GetServiceOfferingByNameAndBrokerCallCount()).To(Equal(1))
+			actualServiceOfferingName, actualServiceBrokerName := fakeCloudControllerClient.GetServiceOfferingByNameAndBrokerArgsForCall(0)
+			Expect(actualServiceOfferingName).To(Equal("fakeServiceOfferingName"))
+			Expect(actualServiceBrokerName).To(Equal("fakeServiceBrokerName"))
 		})
 
-		When("the cloud controller request is successful", func() {
-			BeforeEach(func() {
-				serviceBrokerName = "myServiceBroker"
-			})
+		DescribeTable(
+			"when the client returns an error ",
+			func(clientError, expectedError error) {
+				fakeCloudControllerClient.GetServiceOfferingByNameAndBrokerReturns(ccv3.ServiceOffering{}, ccv3.Warnings{"a warning"}, clientError)
 
-			When("the cloud controller returns one service offering", func() {
-				BeforeEach(func() {
-					fakeCloudControllerClient.GetServiceOfferingsReturns([]ccv3.ServiceOffering{
-						{
-							Name: "some-service-offering",
-							GUID: "some-service-offering-guid",
-						},
-					}, ccv3.Warnings{"some-service-offering-warning"}, nil)
-				})
+				_, warnings, err := actor.GetServiceOfferingByNameAndBroker("fake-service-offering", "fake-service-broker")
+				Expect(err).To(MatchError(expectedError))
+				Expect(warnings).To(ConsistOf("a warning"))
+			},
+			Entry(
+				"ServiceOfferingNotFoundError",
+				ccerror.ServiceOfferingNotFoundError{Name: "foo", ServiceBrokerName: "bar"},
+				actionerror.ServiceNotFoundError{Name: "foo", Broker: "bar"},
+			),
+			Entry(
+				"ServiceOfferingNameAmbiguityError",
+				ccerror.ServiceOfferingNameAmbiguityError{
+					Name:               "foo",
+					ServiceBrokerNames: []string{"bar", "baz"},
+				},
+				actionerror.DuplicateServiceError{
+					Name:           "foo",
+					ServiceBrokers: []string{"bar", "baz"},
+				},
+			),
+			Entry(
+				"other error",
+				errors.New("boom"),
+				errors.New("boom"),
+			),
+		)
+	})
 
-				It("returns a service offering and warnings", func() {
-					Expect(executionError).NotTo(HaveOccurred())
-
-					Expect(serviceOffering).To(Equal(ServiceOffering{Name: "some-service-offering", GUID: "some-service-offering-guid"}))
-					Expect(warnings).To(ConsistOf("some-service-offering-warning"))
-					Expect(fakeCloudControllerClient.GetServiceOfferingsCallCount()).To(Equal(1))
-					Expect(fakeCloudControllerClient.GetServiceOfferingsArgsForCall(0)).To(ConsistOf(
-						ccv3.Query{Key: ccv3.NameFilter, Values: []string{serviceOfferingName}},
-						ccv3.Query{Key: ccv3.ServiceBrokerNamesFilter, Values: []string{"myServiceBroker"}},
-					))
-				})
-			})
-
-			When("the cloud controller returns no service offerings", func() {
-				BeforeEach(func() {
-					fakeCloudControllerClient.GetServiceOfferingsReturns(
-						nil,
-						ccv3.Warnings{"some-service-offering-warning"},
-						nil)
-				})
-
-				It("returns an error and warnings", func() {
-					Expect(executionError).To(MatchError(actionerror.ServiceNotFoundError{
-						Name:   serviceOfferingName,
-						Broker: "myServiceBroker",
-					}))
-					Expect(warnings).To(ConsistOf("some-service-offering-warning"))
-				})
-			})
-
-			When("the cloud controller returns more than one service offering", func() {
-				BeforeEach(func() {
-					fakeCloudControllerClient.GetServiceOfferingsReturns([]ccv3.ServiceOffering{
-						{
-							Name:              "some-service-offering-1",
-							GUID:              "some-service-offering-guid-1",
-							ServiceBrokerName: "a-service-broker",
-						},
-						{
-							Name:              "some-service-offering-2",
-							GUID:              "some-service-offering-guid-2",
-							ServiceBrokerName: "another-service-broker",
-						},
-					}, ccv3.Warnings{"some-service-offering-warning"}, nil)
-				})
-
-				It("returns an error and warnings", func() {
-					Expect(executionError).To(MatchError(actionerror.DuplicateServiceError{Name: serviceOfferingName, ServiceBrokers: []string{"a-service-broker", "another-service-broker"}}))
-					Expect(warnings).To(ConsistOf("some-service-offering-warning"))
-				})
-			})
+	Describe("PurgeServiceOfferingByNameAndBroker", func() {
+		BeforeEach(func() {
+			fakeCloudControllerClient.GetServiceOfferingByNameAndBrokerReturns(ccv3.ServiceOffering{}, ccv3.Warnings{"a warning"}, nil)
 		})
 
-		When("the cloud controller returns an error", func() {
-			BeforeEach(func() {
-				fakeCloudControllerClient.GetServiceOfferingsReturns(
-					nil,
-					ccv3.Warnings{"some-service-offering-warning"},
-					errors.New("no service offering"),
-				)
-			})
+		It("gets the service offering guid", func() {
+			warnings, err := actor.PurgeServiceOfferingByNameAndBroker("fake-service-offering", "fake-service-broker")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(warnings).To(ConsistOf("a warning"))
 
-			It("returns an error and warnings", func() {
-				Expect(executionError).To(MatchError("no service offering"))
-				Expect(warnings).To(ConsistOf("some-service-offering-warning"))
-			})
+			Expect(fakeCloudControllerClient.GetServiceOfferingByNameAndBrokerCallCount()).To(Equal(1))
+			actualOffering, actualBroker := fakeCloudControllerClient.GetServiceOfferingByNameAndBrokerArgsForCall(0)
+			Expect(actualOffering).To(Equal("fake-service-offering"))
+			Expect(actualBroker).To(Equal("fake-service-broker"))
 		})
 
-		When("the broker name is not provided", func() {
-			BeforeEach(func() {
-				fakeCloudControllerClient.GetServiceOfferingsReturns([]ccv3.ServiceOffering{
-					{
-						Name: "some-service-offering",
-						GUID: "some-service-offering-guid",
-					},
-				}, ccv3.Warnings{"some-service-offering-warning"}, nil)
-			})
+		DescribeTable(
+			"when the client returns an error ",
+			func(clientError, expectedError error) {
+				fakeCloudControllerClient.GetServiceOfferingByNameAndBrokerReturns(ccv3.ServiceOffering{}, ccv3.Warnings{"a warning"}, clientError)
 
-			It("queries only on the service offering name", func() {
-				Expect(executionError).NotTo(HaveOccurred())
-
-				Expect(serviceOffering).To(Equal(ServiceOffering{Name: "some-service-offering", GUID: "some-service-offering-guid"}))
-				Expect(warnings).To(ConsistOf("some-service-offering-warning"))
-				Expect(fakeCloudControllerClient.GetServiceOfferingsCallCount()).To(Equal(1))
-				Expect(fakeCloudControllerClient.GetServiceOfferingsArgsForCall(0)).To(ConsistOf(
-					ccv3.Query{Key: ccv3.NameFilter, Values: []string{serviceOfferingName}},
-				))
-			})
-		})
+				warnings, err := actor.PurgeServiceOfferingByNameAndBroker("fake-service-offering", "fake-service-broker")
+				Expect(err).To(MatchError(expectedError))
+				Expect(warnings).To(ConsistOf("a warning"))
+			},
+			Entry(
+				"ServiceOfferingNotFoundError",
+				ccerror.ServiceOfferingNotFoundError{Name: "foo", ServiceBrokerName: "bar"},
+				actionerror.ServiceNotFoundError{Name: "foo", Broker: "bar"},
+			),
+			Entry(
+				"ServiceOfferingNameAmbiguityError",
+				ccerror.ServiceOfferingNameAmbiguityError{
+					Name:               "foo",
+					ServiceBrokerNames: []string{"bar", "baz"},
+				},
+				actionerror.DuplicateServiceError{
+					Name:           "foo",
+					ServiceBrokers: []string{"bar", "baz"},
+				},
+			),
+			Entry(
+				"other error",
+				errors.New("boom"),
+				errors.New("boom"),
+			),
+		)
 	})
 })
