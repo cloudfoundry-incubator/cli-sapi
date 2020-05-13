@@ -172,7 +172,7 @@ required = ["github.com/gorilla/websocket"]
 
 [[constraint]]
   name = "gopkg.in/yaml.v2"
-  version = ">=2.2.1"
+  version = ">=2.3.0"
 
 [[constraint]]
   name = "github.com/cloudfoundry/bosh-cli"
