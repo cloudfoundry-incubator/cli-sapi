@@ -18,40 +18,11 @@ type Domain struct {
 }
 
 func (d Domain) MarshalJSON() ([]byte, error) {
-	type domainWithBoolPointer struct {
-		GUID             string   `jsonry:"guid,omitempty"`
-		Name             string   `jsonry:"name"`
-		Internal         *bool    `jsonry:"internal,omitempty"`
-		OrganizationGUID string   `jsonry:"relationships.organization.data.guid,omitempty"`
-		RouterGroup      string   `jsonry:"router_group.guid,omitempty"`
-		Protocols        []string `jsonry:"supported_protocols,omitempty"`
-	}
-
-	clone := domainWithBoolPointer{
-		GUID:             d.GUID,
-		Name:             d.Name,
-		OrganizationGUID: d.OrganizationGUID,
-		RouterGroup:      d.RouterGroup,
-		Protocols:        d.Protocols,
-	}
-
-	if d.Internal.IsSet {
-		clone.Internal = &d.Internal.Value
-	}
-	return jsonry.Marshal(clone)
+	return jsonry.Marshal(d)
 }
 
 func (d *Domain) UnmarshalJSON(data []byte) error {
-	type alias Domain
-	var defaultUnmarshalledDomain alias
-	err := jsonry.Unmarshal(data, &defaultUnmarshalledDomain)
-	if err != nil {
-		return err
-	}
-
-	*d = Domain(defaultUnmarshalledDomain)
-
-	return nil
+	return jsonry.Unmarshal(data, d)
 }
 
 func (d Domain) Shared() bool {

@@ -300,6 +300,7 @@ var _ = Describe("Domain", func() {
 
 				expectedRequestBody := `{
 					"name": "some-name",
+					"internal": null,
 					"relationships": {
 						"organization": {
 							"data" : {
