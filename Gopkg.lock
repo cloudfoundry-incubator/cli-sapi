@@ -24,6 +24,23 @@
   revision = "4b04f26287a67f2b08e92187fc03e7946f8f99f7"
 
 [[projects]]
+  digest = "1:81f719d050d126e10640a5080f0f9d0fe1c474c232b9194cfb65e3e1a843ad1f"
+  name = "code.cloudfoundry.org/cli"
+  packages = [
+    "actor/actionerror",
+    "api/cloudcontroller/ccerror",
+    "api/cloudcontroller/ccv2/constant",
+    "api/cloudcontroller/ccv3/constant",
+    "api/uaa",
+    "api/uaa/constant",
+    "api/uaa/internal",
+    "util",
+  ]
+  pruneopts = "NUT"
+  revision = "2acd15650eef815159ecd5a83d021ac456280729"
+  version = "v6.51.0"
+
+[[projects]]
   branch = "master"
   digest = "1:d460dfec5d2bb8a053b9145d1f56b2373a1bd0bdaedf8f12ae5bab66da97370a"
   name = "code.cloudfoundry.org/cli-plugin-repo"
@@ -591,7 +608,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:e2661bc5bc1bd07b6eea3fa9424f26d08223cb700399ed3f8e689e3bd554fb01"
+  digest = "1:4e215023f245ee44676ce94f5031f41a7ba2089adf2d9c0175f36eeb6dd62f46"
   name = "golang.org/x/text"
   packages = [
     "collate",
@@ -624,7 +641,7 @@
     "unicode/rangetable",
   ]
   pruneopts = "NUT"
-  revision = "929e72ca90deac4784bbe451caf10faa5b256ebe"
+  revision = "23ae387dee1f90d29a23c0e87ee0b46038fbed0e"
 
 [[projects]]
   branch = "master"
