@@ -21,9 +21,9 @@ func respondWithJSON(w http.ResponseWriter, data interface{}) error {
 	return err
 }
 
-func readGUID(r *http.Request) (string, error) {
+func readBrokerGUID(r *http.Request) (string, error) {
 	vars := mux.Vars(r)
-	guid, ok := vars["guid"]
+	guid, ok := vars["broker_guid"]
 	if !ok {
 		return "", errors.New("no guid in request")
 	}

@@ -20,7 +20,7 @@ import (
 	"github.com/pivotal-cf/brokerapi/v7/domain/apiresponses"
 )
 
-var _ = Describe("Integration Test", func() {
+var _ = Describe("Integration Test For Hydrabroker", func() {
 	var (
 		server      *httptest.Server
 		client      *http.Client
@@ -134,6 +134,40 @@ var _ = Describe("Integration Test", func() {
 			Expect(r).To(Equal(map[string]interface{}{
 				"dashboard_url": "http://example.com",
 			}))
+		})
+
+		When("a service instance exists", func() {
+			var (
+				instanceGUID string
+				parameters   map[string]interface{}
+			)
+
+			BeforeEach(func() {
+				instanceGUID = randomString()
+				parameters = map[string]interface{}{"foo": randomString()}
+
+				request := struct {
+					ServiceID  string                 `json:"service_id"`
+					PlanID     string                 `json:"plan_id"`
+					Parameters map[string]interface{} `json:"parameters"`
+				}{
+					ServiceID:  cfg.Services[0].ID,
+					PlanID:     cfg.Services[0].Plans[0].ID,
+					Parameters: parameters,
+				}
+
+				response := httpRequest(cfg, "PUT", server.URL+"/broker/"+guid+"/v2/service_instances/"+instanceGUID, toJSON(request))
+				expectStatusCode(response, http.StatusCreated)
+			})
+
+			It("allows a service instance to be retrieved", func() {
+				response := httpRequest(cfg, "GET", server.URL+"/broker/"+guid+"/v2/service_instances/"+instanceGUID, nil)
+				expectStatusCode(response, http.StatusOK)
+
+				var instance apiresponses.GetInstanceResponse
+				fromJSON(response.Body, &instance)
+				Expect(instance.Parameters).To(Equal(parameters))
+			})
 		})
 
 		It("allows a service instance to be deleted", func() {

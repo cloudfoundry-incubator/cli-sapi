@@ -13,13 +13,13 @@ import (
 	"github.com/pivotal-cf/brokerapi/v7/domain/apiresponses"
 )
 
-func brokerCheckRequest(store *store.BrokerConfigurationStore, r *http.Request) (config.BrokerConfiguration, error) {
-	guid, err := readGUID(r)
+func brokerParseRequest(store *store.BrokerConfigurationStore, r *http.Request) (config.BrokerConfiguration, error) {
+	brokerGUID, err := readBrokerGUID(r)
 	if err != nil {
 		return config.BrokerConfiguration{}, err
 	}
 
-	cfg, ok := store.GetBrokerConfiguration(guid)
+	cfg, ok := store.GetBrokerConfiguration(brokerGUID)
 	if !ok {
 		return config.BrokerConfiguration{}, notFoundError{}
 	}
@@ -39,7 +39,7 @@ func brokerCheckRequest(store *store.BrokerConfigurationStore, r *http.Request) 
 }
 
 func brokerCatalog(store *store.BrokerConfigurationStore, w http.ResponseWriter, r *http.Request) error {
-	config, err := brokerCheckRequest(store, r)
+	config, err := brokerParseRequest(store, r)
 	if err != nil {
 		return err
 	}
@@ -105,7 +105,7 @@ func brokerCatalog(store *store.BrokerConfigurationStore, w http.ResponseWriter,
 }
 
 func brokerProvision(store *store.BrokerConfigurationStore, w http.ResponseWriter, r *http.Request) error {
-	config, err := brokerCheckRequest(store, r)
+	config, err := brokerParseRequest(store, r)
 	if err != nil {
 		return err
 	}
@@ -128,8 +128,30 @@ func brokerProvision(store *store.BrokerConfigurationStore, w http.ResponseWrite
 	}
 }
 
+func brokerRetrieve(store *store.BrokerConfigurationStore, w http.ResponseWriter, r *http.Request) error {
+	_, err := brokerParseRequest(store, r)
+	if err != nil {
+		return err
+	}
+	//
+	//if config.UpdateResponse != 0 {
+	//	w.WriteHeader(config.UpdateResponse)
+	//	return nil
+	//}
+	//
+
+	response := map[string]interface{}{
+		"parameters": map[string]interface{}{
+			"foo": "bar",
+		},
+	}
+
+	w.WriteHeader(http.StatusOK)
+	return respondWithJSON(w, response)
+}
+
 func brokerUpdate(store *store.BrokerConfigurationStore, w http.ResponseWriter, r *http.Request) error {
-	config, err := brokerCheckRequest(store, r)
+	config, err := brokerParseRequest(store, r)
 	if err != nil {
 		return err
 	}
@@ -149,7 +171,7 @@ func brokerUpdate(store *store.BrokerConfigurationStore, w http.ResponseWriter, 
 }
 
 func brokerDeprovision(store *store.BrokerConfigurationStore, w http.ResponseWriter, r *http.Request) error {
-	config, err := brokerCheckRequest(store, r)
+	config, err := brokerParseRequest(store, r)
 	if err != nil {
 		return err
 	}
@@ -169,7 +191,7 @@ func brokerDeprovision(store *store.BrokerConfigurationStore, w http.ResponseWri
 }
 
 func brokerBind(store *store.BrokerConfigurationStore, w http.ResponseWriter, r *http.Request) error {
-	config, err := brokerCheckRequest(store, r)
+	config, err := brokerParseRequest(store, r)
 	if err != nil {
 		return err
 	}
@@ -189,7 +211,7 @@ func brokerBind(store *store.BrokerConfigurationStore, w http.ResponseWriter, r 
 }
 
 func brokerGetBinding(store *store.BrokerConfigurationStore, w http.ResponseWriter, r *http.Request) error {
-	config, err := brokerCheckRequest(store, r)
+	config, err := brokerParseRequest(store, r)
 	if err != nil {
 		return err
 	}
@@ -203,7 +225,7 @@ func brokerGetBinding(store *store.BrokerConfigurationStore, w http.ResponseWrit
 }
 
 func brokerUnbind(store *store.BrokerConfigurationStore, w http.ResponseWriter, r *http.Request) error {
-	config, err := brokerCheckRequest(store, r)
+	config, err := brokerParseRequest(store, r)
 	if err != nil {
 		return err
 	}
@@ -238,7 +260,7 @@ func brokerAsyncResponse(w http.ResponseWriter, r *http.Request, duration time.D
 }
 
 func brokerLastOperation(store *store.BrokerConfigurationStore, w http.ResponseWriter, r *http.Request) error {
-	_, err := brokerCheckRequest(store, r)
+	_, err := brokerParseRequest(store, r)
 	if err != nil {
 		return err
 	}

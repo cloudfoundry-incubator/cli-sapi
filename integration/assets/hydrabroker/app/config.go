@@ -31,7 +31,7 @@ func configRecreateBroker(store *store.BrokerConfigurationStore, w http.Response
 		return err
 	}
 
-	guid, err := readGUID(r)
+	guid, err := readBrokerGUID(r)
 	if err != nil {
 		return err
 	}
@@ -43,7 +43,7 @@ func configRecreateBroker(store *store.BrokerConfigurationStore, w http.Response
 }
 
 func configDeleteBroker(store *store.BrokerConfigurationStore, w http.ResponseWriter, r *http.Request) error {
-	guid, err := readGUID(r)
+	guid, err := readBrokerGUID(r)
 	if err != nil {
 		return err
 	}
