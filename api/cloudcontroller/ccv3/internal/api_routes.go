@@ -79,6 +79,7 @@ const (
 	GetSecurityGroupsRequest                                    = "GetSecurityGroups"
 	GetServiceBrokersRequest                                    = "GetServiceBrokers"
 	GetServiceInstancesRequest                                  = "GetServiceInstances"
+	GetServiceInstanceParametersRequest                         = "GetServiceInstanceParameters"
 	GetServiceOfferingsRequest                                  = "GetServiceOfferings"
 	GetServicePlansRequest                                      = "GetServicePlans"
 	GetServicePlanVisibilityRequest                             = "GetServicePlanVisibility"
@@ -275,6 +276,7 @@ var APIRoutes = []Route{
 	{Resource: ServiceInstancesResource, Path: "/:service_instance_guid", Method: http.MethodPatch, Name: PatchServiceInstanceRequest},
 	{Resource: ServiceInstancesResource, Path: "/:service_instance_guid/relationships/shared_spaces", Method: http.MethodPost, Name: PostServiceInstanceRelationshipsSharedSpacesRequest},
 	{Resource: ServiceInstancesResource, Path: "/:service_instance_guid/relationships/shared_spaces/:space_guid", Method: http.MethodDelete, Name: DeleteServiceInstanceRelationshipsSharedSpaceRequest},
+	{Resource: ServiceInstancesResource, Path: "/:service_instance_guid/parameters", Method: http.MethodGet, Name: GetServiceInstanceParametersRequest},
 	{Resource: ServiceOfferingsResource, Path: "/", Method: http.MethodGet, Name: GetServiceOfferingsRequest},
 	{Resource: ServiceOfferingsResource, Path: "/:service_offering_guid", Method: http.MethodPatch, Name: PatchServiceOfferingRequest},
 	{Resource: ServiceOfferingsResource, Path: "/:service_offering_guid", Method: http.MethodDelete, Name: DeleteServiceOfferingRequest},

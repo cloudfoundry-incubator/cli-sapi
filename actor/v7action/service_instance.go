@@ -5,10 +5,12 @@ import (
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccerror"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3"
 	"code.cloudfoundry.org/cli/resources"
+	"code.cloudfoundry.org/cli/types"
 )
 
 type ServiceInstanceWithRelationships struct {
 	resources.ServiceInstance
+	Parameters        types.OptionalObject
 	ServiceOffering   resources.ServiceOffering
 	ServicePlanName   string
 	ServiceBrokerName string
@@ -21,18 +23,9 @@ func (actor Actor) GetServiceInstanceByNameAndSpace(serviceInstanceName string, 
 
 func (actor Actor) GetServiceInstanceDetails(serviceInstanceName string, spaceGUID string) (ServiceInstanceWithRelationships, Warnings, error) {
 	query := []ccv3.Query{
-		{
-			Key:    ccv3.FieldsServicePlan,
-			Values: []string{"name", "guid"},
-		},
-		{
-			Key:    ccv3.FieldsServicePlanServiceOffering,
-			Values: []string{"name", "guid", "description", "documentation_url"},
-		},
-		{
-			Key:    ccv3.FieldsServicePlanServiceOfferingServiceBroker,
-			Values: []string{"name", "guid"},
-		},
+		{Key: ccv3.FieldsServicePlan, Values: []string{"name", "guid"}},
+		{Key: ccv3.FieldsServicePlanServiceOffering, Values: []string{"name", "guid", "description", "documentation_url"}},
+		{Key: ccv3.FieldsServicePlanServiceOfferingServiceBroker, Values: []string{"name", "guid"}},
 	}
 
 	serviceInstance, included, warnings, err := actor.CloudControllerClient.GetServiceInstanceByNameAndSpace(serviceInstanceName, spaceGUID, query...)
@@ -43,9 +36,16 @@ func (actor Actor) GetServiceInstanceDetails(serviceInstanceName string, spaceGU
 	default:
 		return ServiceInstanceWithRelationships{}, Warnings(warnings), err
 	}
+	result := ServiceInstanceWithRelationships{ServiceInstance: serviceInstance}
 
-	result := ServiceInstanceWithRelationships{
-		ServiceInstance: serviceInstance,
+	if shouldRequestServiceInstanceParameters(serviceInstance) {
+		params, paramsWarnings, err := actor.CloudControllerClient.GetServiceInstanceParameters(serviceInstance.GUID)
+		warnings = append(warnings, paramsWarnings...)
+		// ignore errors because we currently we request parameters even when the broker does
+		// not allow instance retrieval
+		if err == nil {
+			result.Parameters = types.NewOptionalObject(params)
+		}
 	}
 
 	if len(included.ServicePlans) == 1 {
@@ -94,4 +94,10 @@ func (actor Actor) UpdateUserProvidedServiceInstance(serviceInstanceName, spaceG
 	}
 
 	return Warnings(warnings), nil
+}
+
+func shouldRequestServiceInstanceParameters(s resources.ServiceInstance) bool {
+	// TODO: should also check if the "instances_retrievable" flag is set in the service offering
+	return s.Type == resources.ManagedServiceInstance &&
+		s.LastOperation.State != resources.OperationInProgress
 }

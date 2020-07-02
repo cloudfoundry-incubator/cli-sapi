@@ -12,6 +12,8 @@ const (
 	ManagedServiceInstance      ServiceInstanceType = "managed"
 )
 
+type ServiceInstanceParameters map[string]interface{}
+
 type ServiceInstance struct {
 	// Type is either "user-provided" or "managed"
 	Type ServiceInstanceType `jsonry:"type,omitempty"`

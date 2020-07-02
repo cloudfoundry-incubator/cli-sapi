@@ -197,6 +197,7 @@ var _ = Describe("service command", func() {
 					},
 					ServicePlanName:   servicePlanName,
 					ServiceBrokerName: serviceBrokerName,
+					Parameters:        resources.ServiceInstanceParameters{"foo": "bar"},
 				},
 				v7action.Warnings{"warning one", "warning two"},
 				nil,
@@ -231,6 +232,10 @@ var _ = Describe("service command", func() {
 				Say(`message:\s+%s\n`, lastOperationDescription),
 				Say(`started:\s+%s\n`, lastOperationStartTime),
 				Say(`updated:\s+%s\n`, lastOperationUpdatedTime),
+				Say(`\n`),
+				Say(`Showing parameters from service instance %s...\n`, serviceInstanceName),
+				Say(`\n`),
+				Say(`{"foo":"bar"}`),
 			))
 
 			Expect(testUI.Err).To(SatisfyAll(

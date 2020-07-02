@@ -81,6 +81,7 @@ var _ = Describe("Service Instance Actions", func() {
 	Describe("GetServiceInstanceDetails", func() {
 		const (
 			serviceInstanceName          = "some-service-instance"
+			serviceInstanceGUID          = "some-service-guid"
 			spaceGUID                    = "some-source-space-guid"
 			servicePlanName              = "fake-service-plan-name"
 			serviceOfferingName          = "fake-service-offering-name"
@@ -99,12 +100,13 @@ var _ = Describe("Service Instance Actions", func() {
 			serviceInstance, warnings, executionError = actor.GetServiceInstanceDetails(serviceInstanceName, spaceGUID)
 		})
 
-		When("the cloud controller request is successful", func() {
+		When("a managed service instance is successfully retrieved", func() {
 			BeforeEach(func() {
 				fakeCloudControllerClient.GetServiceInstanceByNameAndSpaceReturns(
 					resources.ServiceInstance{
-						Name: "some-service-instance",
-						GUID: "some-service-instance-guid",
+						Name: serviceInstanceName,
+						GUID: serviceInstanceGUID,
+						Type: resources.ManagedServiceInstance,
 					},
 					ccv3.IncludedResources{
 						ServicePlans: []resources.ServicePlan{{Name: servicePlanName}},
@@ -118,48 +120,190 @@ var _ = Describe("Service Instance Actions", func() {
 					ccv3.Warnings{"some-service-instance-warning"},
 					nil,
 				)
+
+				fakeCloudControllerClient.GetServiceInstanceParametersReturns(
+					resources.ServiceInstanceParameters{"foo": "bar"},
+					ccv3.Warnings{"some-service-instance-parameters-warning"},
+					nil,
+				)
 			})
 
 			It("returns a service instance with relationships and warnings", func() {
 				Expect(executionError).NotTo(HaveOccurred())
-				Expect(warnings).To(ConsistOf("some-service-instance-warning"))
 
-				Expect(serviceInstance).To(Equal(
-					ServiceInstanceWithRelationships{
-						ServiceInstance: resources.ServiceInstance{
-							Name: "some-service-instance",
-							GUID: "some-service-instance-guid",
-						},
-						ServiceOffering: resources.ServiceOffering{
-							Name:             serviceOfferingName,
-							Description:      serviceOfferingDescription,
-							DocumentationURL: serviceOfferingDocumentation,
-						},
-						ServicePlanName:   servicePlanName,
-						ServiceBrokerName: serviceBrokerName,
-					},
-				))
+				By("returning warnings", func() {
+					Expect(warnings).To(ConsistOf("some-service-instance-warning", "some-service-instance-parameters-warning"))
+				})
 
-				Expect(fakeCloudControllerClient.GetServiceInstanceByNameAndSpaceCallCount()).To(Equal(1))
-				actualName, actualSpaceGUID, actualQuery := fakeCloudControllerClient.GetServiceInstanceByNameAndSpaceArgsForCall(0)
-				Expect(actualName).To(Equal(serviceInstanceName))
-				Expect(actualSpaceGUID).To(Equal(spaceGUID))
-				Expect(actualQuery).To(ConsistOf(
-					ccv3.Query{
-						Key:    ccv3.FieldsServicePlan,
-						Values: []string{"name", "guid"},
-					},
-					ccv3.Query{
-						Key:    ccv3.FieldsServicePlanServiceOffering,
-						Values: []string{"name", "guid", "description", "documentation_url"},
-					},
-					ccv3.Query{
-						Key:    ccv3.FieldsServicePlanServiceOfferingServiceBroker,
-						Values: []string{"name", "guid"},
-					},
-				))
+				By("returning the correct data", func() {
+					Expect(serviceInstance).To(Equal(
+						ServiceInstanceWithRelationships{
+							ServiceInstance: resources.ServiceInstance{
+								Name: serviceInstanceName,
+								GUID: serviceInstanceGUID,
+								Type: resources.ManagedServiceInstance,
+							},
+							ServiceOffering: resources.ServiceOffering{
+								Name:             serviceOfferingName,
+								Description:      serviceOfferingDescription,
+								DocumentationURL: serviceOfferingDocumentation,
+							},
+							ServicePlanName:   servicePlanName,
+							ServiceBrokerName: serviceBrokerName,
+						},
+						ccv3.IncludedResources{},
+						ccv3.Warnings{"some-service-instance-warning"},
+						nil,
+					))
+				})
+
+				By("making the right call to get the service instance", func() {
+					Expect(fakeCloudControllerClient.GetServiceInstanceByNameAndSpaceCallCount()).To(Equal(1))
+					actualName, actualSpaceGUID, actualQuery := fakeCloudControllerClient.GetServiceInstanceByNameAndSpaceArgsForCall(0)
+					Expect(actualName).To(Equal(serviceInstanceName))
+					Expect(actualSpaceGUID).To(Equal(spaceGUID))
+					Expect(actualQuery).To(ConsistOf(
+						ccv3.Query{
+							Key:    ccv3.FieldsServicePlan,
+							Values: []string{"name", "guid"},
+						},
+						ccv3.Query{
+							Key:    ccv3.FieldsServicePlanServiceOffering,
+							Values: []string{"name", "guid"},
+						},
+						ccv3.Query{
+							Key:    ccv3.FieldsServicePlanServiceOfferingServiceBroker,
+							Values: []string{"name", "guid"},
+						},
+					))
+				})
+
+				By("making a call to get the parameters", func() {
+					Expect(fakeCloudControllerClient.GetServiceInstanceParametersCallCount()).To(Equal(1))
+					Expect(fakeCloudControllerClient.GetServiceInstanceParametersArgsForCall(0)).To(Equal(serviceInstanceGUID))
+				})
+			})
+
+			It("returns a service instance with warnings", func() {
+				Expect(executionError).NotTo(HaveOccurred())
+
+				By("returning warnings", func() {
+					Expect(warnings).To(ConsistOf("some-service-instance-warning"))
+				})
+
+				By("returning the correct data", func() {
+					Expect(serviceInstance).To(Equal(
+						ServiceInstanceWithRelationships{
+							ServiceInstance: resources.ServiceInstance{
+								Name: serviceInstanceName,
+								GUID: serviceInstanceGUID,
+								Type: resources.UserProvidedServiceInstance,
+							},
+						},
+					))
+				})
+
+				By("making the right call to get the service instance", func() {
+					Expect(fakeCloudControllerClient.GetServiceInstanceByNameAndSpaceCallCount()).To(Equal(1))
+					actualName, actualSpaceGUID, actualQuery := fakeCloudControllerClient.GetServiceInstanceByNameAndSpaceArgsForCall(0)
+					Expect(actualName).To(Equal(serviceInstanceName))
+					Expect(actualSpaceGUID).To(Equal(spaceGUID))
+					Expect(actualQuery).To(ConsistOf(
+						ccv3.Query{
+							Key:    ccv3.FieldsServicePlan,
+							Values: []string{"name", "guid"},
+						},
+						ccv3.Query{
+							Key:    ccv3.FieldsServicePlanServiceOffering,
+							Values: []string{"name", "guid", "description", "documentation_url"},
+						},
+						ccv3.Query{
+							Key:    ccv3.FieldsServicePlanServiceOfferingServiceBroker,
+							Values: []string{"name", "guid"},
+						},
+					))
+				})
+
+				By("not attempting to get the parameters", func() {
+					Expect(fakeCloudControllerClient.GetServiceInstanceParametersCallCount()).To(Equal(0))
+				})
 			})
 		})
+
+		//When("service instances are retrievable", func() {
+		//	BeforeEach(func() {
+		//		fakeCloudControllerClient.GetServiceInstanceByNameAndSpaceReturns(
+		//			resources.ServiceInstance{
+		//				Name: serviceInstanceName,
+		//				GUID: serviceInstanceGUID,
+		//				Type: resources.ManagedServiceInstance,
+		//			},
+		//			ccv3.IncludedResources{
+		//				ServicePlans:     []ccv3.ServicePlan{{Name: servicePlanName}},
+		//				ServiceOfferings: []ccv3.ServiceOffering{{Name: serviceOfferingName}},
+		//				ServiceBrokers:   []ccv3.ServiceBroker{{Name: serviceBrokerName}},
+		//			},
+		//			ccv3.Warnings{"some-service-instance-warning"},
+		//			nil,
+		//		)
+		//
+		//		fakeCloudControllerClient.GetServiceInstanceParametersReturns(
+		//			resources.ServiceInstanceParameters{"foo": "bar"},
+		//			ccv3.Warnings{"some-service-instance-parameters-warning"},
+		//			nil,
+		//		)
+		//	})
+		//
+		//	It("returns a service instance with relationships and warnings", func() {
+		//		Expect(executionError).NotTo(HaveOccurred())
+		//
+		//		By("returning warnings", func() {
+		//			Expect(warnings).To(ConsistOf("some-service-instance-warning", "some-service-instance-parameters-warning"))
+		//		})
+		//
+		//		By("returning the correct data", func() {
+		//			Expect(serviceInstance).To(Equal(
+		//				ServiceInstanceWithRelationships{
+		//					ServiceInstance: resources.ServiceInstance{
+		//						Name: serviceInstanceName,
+		//						GUID: serviceInstanceGUID,
+		//						Type: resources.ManagedServiceInstance,
+		//					},
+		//					ServicePlanName:     servicePlanName,
+		//					ServiceOfferingName: serviceOfferingName,
+		//					ServiceBrokerName:   serviceBrokerName,
+		//					Parameters:          resources.ServiceInstanceParameters{"foo": "bar"},
+		//				},
+		//			))
+		//		})
+		//
+		//		By("making the right call to get the service instance", func() {
+		//			Expect(fakeCloudControllerClient.GetServiceInstanceByNameAndSpaceCallCount()).To(Equal(1))
+		//			actualName, actualSpaceGUID, actualQuery := fakeCloudControllerClient.GetServiceInstanceByNameAndSpaceArgsForCall(0)
+		//			Expect(actualName).To(Equal(serviceInstanceName))
+		//			Expect(actualSpaceGUID).To(Equal(spaceGUID))
+		//			Expect(actualQuery).To(ConsistOf(
+		//				ccv3.Query{
+		//					Key:    ccv3.FieldsServicePlan,
+		//					Values: []string{"name", "guid"},
+		//				},
+		//				ccv3.Query{
+		//					Key:    ccv3.FieldsServicePlanServiceOffering,
+		//					Values: []string{"name", "guid"},
+		//				},
+		//				ccv3.Query{
+		//					Key:    ccv3.FieldsServicePlanServiceOfferingServiceBroker,
+		//					Values: []string{"name", "guid"},
+		//				},
+		//			))
+		//		})
+		//
+		//		By("making a call to get the parameters", func() {
+		//			Expect(fakeCloudControllerClient.GetServiceInstanceParametersCallCount()).To(Equal(1))
+		//			Expect(fakeCloudControllerClient.GetServiceInstanceParametersArgsForCall(0)).To(Equal(serviceInstanceGUID))
+		//		})
+		//	})
+		//})
 
 		When("the service instance cannot be found", func() {
 			BeforeEach(func() {

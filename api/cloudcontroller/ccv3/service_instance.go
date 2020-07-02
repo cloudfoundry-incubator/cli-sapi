@@ -54,6 +54,18 @@ func (client *Client) GetServiceInstanceByNameAndSpace(name, spaceGUID string, q
 	return instances[0], included, warnings, nil
 }
 
+func (client Client) GetServiceInstanceParameters(serviceInstanceGUID string) (resources.ServiceInstanceParameters, Warnings, error) {
+	var result resources.ServiceInstanceParameters
+
+	_, warnings, err := client.MakeRequest(RequestParams{
+		RequestName:  internal.GetServiceInstanceParametersRequest,
+		URIParams:    internal.Params{"service_instance_guid": serviceInstanceGUID},
+		ResponseBody: &result,
+	})
+
+	return result, warnings, err
+}
+
 func (client *Client) CreateServiceInstance(serviceInstance resources.ServiceInstance) (JobURL, Warnings, error) {
 	return client.MakeRequest(RequestParams{
 		RequestName: internal.PostServiceInstanceRequest,

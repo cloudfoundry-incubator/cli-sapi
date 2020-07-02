@@ -1,6 +1,7 @@
 package ccv3_test
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -281,6 +282,60 @@ var _ = Describe("Service Instance", func() {
 					},
 				}))
 				Expect(warnings).To(ConsistOf("warning-1", "warning-2"))
+			})
+		})
+	})
+
+	Describe("GetServiceInstanceParameters", func() {
+		const guid = "fake-service-instance-guid"
+
+		BeforeEach(func() {
+			requester.MakeRequestCalls(func(params RequestParams) (JobURL, Warnings, error) {
+				json.Unmarshal([]byte(`{"foo":"bar"}`), params.ResponseBody)
+				return "", Warnings{"one", "two"}, nil
+			})
+		})
+
+		It("makes the correct API request", func() {
+			client.GetServiceInstanceParameters(guid)
+
+			Expect(requester.MakeRequestCallCount()).To(Equal(1))
+			actualRequest := requester.MakeRequestArgsForCall(0)
+			Expect(actualRequest.RequestName).To(Equal(internal.GetServiceInstanceParametersRequest))
+			Expect(actualRequest.URIParams).To(Equal(internal.Params{"service_instance_guid": guid}))
+		})
+
+		It("returns the parameters", func() {
+			params, warnings, err := client.GetServiceInstanceParameters(guid)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(warnings).To(ConsistOf("one", "two"))
+			Expect(params).To(Equal(resources.ServiceInstanceParameters{"foo": "bar"}))
+		})
+
+		When("there are no parameters", func() {
+			BeforeEach(func() {
+				requester.MakeRequestCalls(func(params RequestParams) (JobURL, Warnings, error) {
+					json.Unmarshal([]byte(``), params.ResponseBody)
+					return "", nil, nil
+				})
+			})
+
+			It("returns an empty object", func() {
+				params, _, _ := client.GetServiceInstanceParameters(guid)
+				Expect(params).To(BeEmpty())
+			})
+		})
+
+		When("there is an error getting the parameters", func() {
+			BeforeEach(func() {
+				requester.MakeRequestReturns("", Warnings{"one", "two"}, errors.New("boom"))
+			})
+
+			It("returns warnings and an error", func() {
+				params, warnings, err := client.GetServiceInstanceParameters(guid)
+				Expect(err).To(MatchError("boom"))
+				Expect(warnings).To(ConsistOf("one", "two"))
+				Expect(params).To(BeEmpty())
 			})
 		})
 	})

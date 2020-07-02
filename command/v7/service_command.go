@@ -1,6 +1,7 @@
 package v7
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"code.cloudfoundry.org/cli/actor/v7action"
@@ -65,6 +66,7 @@ func (cmd ServiceCommand) displayUPSI() error {
 	}
 
 	cmd.UI.DisplayKeyValueTable("", table, 3)
+
 	return nil
 }
 
@@ -88,7 +90,10 @@ func (cmd ServiceCommand) displayManaged() error {
 	cmd.UI.DisplayKeyValueTable("", table, 3)
 	cmd.UI.DisplayNewline()
 
-	return cmd.displayLastOperation()
+	if err := cmd.displayLastOperation(); err != nil {
+		return err
+	}
+	return cmd.displayParameters()
 }
 
 func (cmd ServiceCommand) displayLastOperation() error {
@@ -108,6 +113,25 @@ func (cmd ServiceCommand) displayLastOperation() error {
 		{cmd.UI.TranslateText("updated:"), cmd.serviceInstance.LastOperation.UpdatedAt},
 	}
 	cmd.UI.DisplayKeyValueTable("", table, 3)
+	cmd.UI.DisplayNewline()
+
+	return nil
+}
+
+func (cmd ServiceCommand) displayParameters() error {
+	cmd.UI.DisplayTextWithFlavor(
+		"Showing parameters from service instance {{.ServiceInstanceName}}...",
+		map[string]interface{}{
+			"ServiceInstanceName": cmd.serviceInstance.Name,
+		},
+	)
+	cmd.UI.DisplayNewline()
+
+	data, err := json.Marshal(cmd.serviceInstance.Parameters)
+	if err != nil {
+		return err
+	}
+	cmd.UI.DisplayText(string(data))
 
 	return nil
 }
@@ -128,5 +152,6 @@ func (cmd ServiceCommand) displayIntro() error {
 		},
 	)
 	cmd.UI.DisplayNewline()
+
 	return nil
 }

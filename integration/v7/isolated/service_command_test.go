@@ -154,6 +154,7 @@ var _ = Describe("service command", func() {
 					broker.FirstServicePlanName(),
 					serviceInstanceName,
 					"-t", tags,
+					"-c", `{"foo":"bar"}`,
 				}
 				Eventually(helpers.CF(command...)).Should(Exit(0))
 			})
@@ -195,6 +196,10 @@ var _ = Describe("service command", func() {
 						Say(`message:\s*\n`),
 						Say(`started:\s+%s\n`, helpers.TimestampRegex),
 						Say(`updated:\s+%s\n`, helpers.TimestampRegex),
+						Say(`\n`),
+						Say(`Showing parameters from service instance %s...\n`, serviceInstanceName),
+						Say(`\n`),
+						Say(`{"foo":"bar"}`),
 					))
 				})
 
