@@ -31,6 +31,10 @@ type ServiceInstance struct {
 	DashboardURL types.OptionalString `jsonry:"dashboard_url"`
 	// Credentials are passed to the app
 	Credentials types.OptionalObject `jsonry:"credentials"`
+	// UpgradeAvailable says whether the plan is at a higher version
+	UpgradeAvailable types.OptionalBoolean `json:"upgrade_available"`
+	// MaintenanceInfoVersion is the version this service is at
+	MaintenanceInfoVersion string `jsonry:"maintenance_info.version,omitempty"`
 	// LastOperation is the last operation on the service instance
 	LastOperation LastOperation `jsonry:"last_operation"`
 }

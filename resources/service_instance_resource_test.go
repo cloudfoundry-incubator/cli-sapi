@@ -25,6 +25,7 @@ var _ = Describe("service instance resource", func() {
 				Expect(parsed).To(Equal(serviceInstance))
 			})
 		},
+		Entry("empty", ServiceInstance{}, `{}`),
 		Entry("type", ServiceInstance{Type: "fake-type"}, `{"type": "fake-type"}`),
 		Entry("name", ServiceInstance{Name: "fake-name"}, `{"name": "fake-name"}`),
 		Entry("guid", ServiceInstance{GUID: "fake-guid"}, `{"guid": "fake-guid"}`),
@@ -36,6 +37,7 @@ var _ = Describe("service instance resource", func() {
 		Entry("route empty", ServiceInstance{RouteServiceURL: types.NewOptionalString("https://fake-route.com")}, `{"route_service_url": "https://fake-route.com"}`),
 		Entry("dashboard", ServiceInstance{DashboardURL: types.NewOptionalString("https://fake-dashboard.com")}, `{"dashboard_url": "https://fake-dashboard.com"}`),
 		Entry("dashboard empty", ServiceInstance{DashboardURL: types.NewOptionalString("https://fake-dashboard.com")}, `{"dashboard_url": "https://fake-dashboard.com"}`),
+		Entry("upgrade available", ServiceInstance{UpgradeAvailable: types.NewOptionalBoolean(false)}, `{"upgrade_available": false}`),
 		Entry(
 			"credentials",
 			ServiceInstance{
@@ -72,7 +74,6 @@ var _ = Describe("service instance resource", func() {
 				}
 			}`,
 		),
-		Entry("last operation empty", ServiceInstance{}, `{}`),
 		Entry(
 			"space guid",
 			ServiceInstance{SpaceGUID: "fake-space-guid"},
@@ -87,20 +88,35 @@ var _ = Describe("service instance resource", func() {
             }`,
 		),
 		Entry(
+			"maintenance info version",
+			ServiceInstance{MaintenanceInfoVersion: "3.2.1"},
+			`{
+				"maintenance_info": {
+					"version": "3.2.1"
+				}
+			}`,
+		),
+		Entry(
 			"everything",
 			ServiceInstance{
-				Type:            UserProvidedServiceInstance,
-				GUID:            "fake-guid",
-				Name:            "fake-space-guid",
-				SpaceGUID:       "fake-space-guid",
-				Tags:            types.NewOptionalStringSlice("foo", "bar"),
-				SyslogDrainURL:  types.NewOptionalString("https://fake-syslog.com"),
-				RouteServiceURL: types.NewOptionalString("https://fake-route.com"),
-				DashboardURL:    types.NewOptionalString("https://fake-dashboard.com"),
+				Type:                   UserProvidedServiceInstance,
+				GUID:                   "fake-guid",
+				Name:                   "fake-space-guid",
+				SpaceGUID:              "fake-space-guid",
+				Tags:                   types.NewOptionalStringSlice("foo", "bar"),
+				SyslogDrainURL:         types.NewOptionalString("https://fake-syslog.com"),
+				RouteServiceURL:        types.NewOptionalString("https://fake-route.com"),
+				DashboardURL:           types.NewOptionalString("https://fake-dashboard.com"),
+				UpgradeAvailable:       types.NewOptionalBoolean(true),
+				MaintenanceInfoVersion: "1.0.0",
 				Credentials: types.NewOptionalObject(map[string]interface{}{
 					"foo": "bar",
 					"baz": false,
 				}),
+				LastOperation: LastOperation{
+					Type:  "create",
+					State: "in progress",
+				},
 			},
 			`{
 				"type": "user-provided",
@@ -110,9 +126,17 @@ var _ = Describe("service instance resource", func() {
 				"syslog_drain_url": "https://fake-syslog.com",
 				"route_service_url": "https://fake-route.com",
 				"dashboard_url": "https://fake-dashboard.com",
+				"maintenance_info": {
+					"version": "1.0.0"
+         		},
+				"upgrade_available": true,
 				"credentials": {
 					"foo": "bar",
 					"baz": false
+				},
+				"last_operation": {
+					"type": "create",
+					"state": "in progress"
 				},
 				"relationships": {
 					"space": {
